@@ -1,16 +1,17 @@
 import 'phaser'
-import { MainScene } from './scenes/mainScene'
+import { WINDOW_WIDTH, WINDOW_HEIGHT } from './config'
+import { MainScene } from './scenes/play'
 
 const config: GameConfig = {
-  width: 1024,
-  height: 768,
+  width: WINDOW_WIDTH,
+  height: WINDOW_HEIGHT,
   type: Phaser.AUTO,
   parent: 'game',
   scene: MainScene,
   physics: {
     default: 'matter',
-    arcade: {
-      gravity: { y: 200 },
+    matter: {
+      debug: true,
     },
   },
 }
