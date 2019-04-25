@@ -32,29 +32,56 @@ const createArm = (scene: Phaser.Scene) => {
 
   return obj
 }
-const createLink = (y: number, scene: Phaser.Scene) => {
-  const obj = scene.matter.add.image(0, y, 'chain', undefined, {
-    shape: 'rectangle',
-    mass: 0.1,
-  })
 
-  obj.setScale(0.05, 0.05)
+const createArmAnchor = (scene: Phaser.Scene) => {
+  const obj = scene.matter.add.image(0, 0, 'ball')
+
+  obj.setPosition(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2)
+  obj.setSize(1300, 1300)
+  obj.setScale(0.01, 0.01)
+  obj.setMass(1000)
+  obj.setFixedRotation()
+  obj.setIgnoreGravity(true)
 
   return obj
 }
 
 const createChain = (arm: Phaser.Physics.Matter.Image, scene: Phaser.Scene) => {
-  let y = 0
-  let prev = arm
+  var group = scene.matter.world.nextGroup(true)
 
-  for (var i = 0; i < 5; i++) {
-    const link = createLink(y, scene)
-    scene.matter.add.joint(prev, link, i === 0 ? 200 : 35, 0.4)
-    prev = link
-    y += 400
-  }
+  var obj = scene.matter.add.stack(arm.x, arm.y, 1, 5, 0, 0, function(x, y) {
+    return (Phaser.Physics.Matter as any).Matter.Bodies.rectangle(
+      x,
+      y,
+      20,
+      50,
+      {
+        collisionFilter: { group: group },
+        chamfer: 5,
+        density: 0.1,
+        mass: 0,
+        frictionAir: 0.01,
+      }
+    )
+  })
 
-  return
+  scene.matter.add.chain(obj, 0, 0.5, 0, -0.3, {
+    stiffness: 1,
+    length: 0,
+    render: {
+      visible: true,
+    },
+  })
+
+  const constraint: any = scene.matter.add.constraint(
+    (obj as any).bodies[0],
+    arm,
+    50
+  )
+
+  // constraint.bodyA.pivot.y = -10
+
+  return obj
 }
 
 export class MainScene extends Phaser.Scene {
@@ -62,6 +89,7 @@ export class MainScene extends Phaser.Scene {
   ground?: Phaser.Physics.Matter.Image
   crate?: Phaser.Physics.Matter.Image
   arm?: Phaser.Physics.Matter.Image
+  armAnchor?: Phaser.Physics.Matter.Image
   cameraMode?: Camera.CameraMode
 
   constructor() {
@@ -72,61 +100,61 @@ export class MainScene extends Phaser.Scene {
 
   preload = () => {
     this.load.image('arm', './src/assets/arm.png')
+    this.load.image('ball', './src/assets/ball.jpg')
     this.load.image('chain', './src/assets/chain.png')
     this.load.image('concrete', './src/assets/concrete.jpg')
     this.load.image('crate', './src/assets/crate.png')
   }
 
   create = () => {
-    // CAMERA
-    debugger
     const { centerX, centerY } = this.cameras.main
-    this.cameras.main.centerOnX(centerX)
-    this.cameras.main.centerOnY(-centerY)
-    this.cameraMode = Camera.CameraModeNS.follow
+    // this.cameras.main.centerOnX(centerX)
+    // this.cameras.main.centerOnY(-centerY)
+    // this.cameraMode = Camera.CameraModeNS.follow
 
     // INPUTS
     this.keys = this.input.keyboard.addKeys('W,S,A,D,up,down,left,right,space')
 
     // OBJECTS
-    this.ground = createGround(this)
-    this.crate = createCrate(this)
-    this.arm = createArm(this)
-    createChain(this.arm, this)
+    // this.ground = createGround(this)
+    // this.crate = createCrate(this)
+    // this.arm = createArm(this)
+    this.armAnchor = createArmAnchor(this)
+    createChain(this.armAnchor, this)
   }
 
   update = () => {
-    Camera.updateCamera({
-      canvas: this.sys.game.canvas,
-      mode: this.cameraMode,
-      camera: this.cameras.main,
-      target: this.crate,
-    })
+    // Camera.updateCamera({
+    //   canvas: this.sys.game.canvas,
+    //   mode: this.cameraMode,
+    //   camera: this.cameras.main,
+    //   target: this.crate,
+    // })
 
-    if (!this.arm) {
+    if (!this.armAnchor) {
       return
     }
 
     if (this.keys.left.isDown || this.keys.right.isDown) {
       if (this.keys.left.isDown) {
-        this.arm.setVelocityX(-5)
+        this.armAnchor.setVelocityX(-5)
       }
       if (this.keys.right.isDown) {
-        this.arm.setVelocityX(5)
+        this.armAnchor.setVelocityX(5)
       }
     } else {
-      this.arm.setVelocityX(0)
+      this.armAnchor.setVelocityX(0)
     }
 
     if (this.keys.up.isDown || this.keys.down.isDown) {
       if (this.keys.up.isDown) {
-        this.arm.setVelocityY(-5)
+        this.armAnchor.setVelocityY(-5)
       }
       if (this.keys.down.isDown) {
-        this.arm.setVelocityY(5)
+        this.armAnchor.setVelocityY(5)
       }
     } else {
-      this.arm.setVelocityY(0)
+      this.armAnchor.setVelocityY(0)
     }
   }
 }
