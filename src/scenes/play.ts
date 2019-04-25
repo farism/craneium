@@ -1,9 +1,10 @@
 import { WINDOW_HEIGHT, WINDOW_WIDTH } from '../config'
+import * as Camera from '../camera'
 
 const createGround = (scene: Phaser.Scene) => {
   const obj = scene.matter.add.image(0, WINDOW_HEIGHT - 20, 'concrete')
 
-  obj.setPosition(WINDOW_WIDTH / 2, WINDOW_HEIGHT)
+  obj.setPosition(WINDOW_WIDTH / 2, 0)
   obj.setStatic(true)
   obj.setSize(1024, 20)
 
@@ -13,7 +14,7 @@ const createGround = (scene: Phaser.Scene) => {
 const createCrate = (scene: Phaser.Scene) => {
   const obj = scene.matter.add.image(0, 0, 'crate')
 
-  obj.setPosition(WINDOW_WIDTH / 2, WINDOW_HEIGHT - 225)
+  obj.setPosition(WINDOW_WIDTH / 2, -225)
   obj.setSize(225, 225)
   obj.setScale(0.5)
 
@@ -23,7 +24,7 @@ const createCrate = (scene: Phaser.Scene) => {
 const createArm = (scene: Phaser.Scene) => {
   const obj = scene.matter.add.image(0, 0, 'arm')
 
-  obj.setPosition(WINDOW_WIDTH / 2, 110)
+  obj.setPosition(WINDOW_WIDTH / 2, -300)
   obj.setSize(600, 442)
   obj.setScale(1, 0.5)
   obj.setIgnoreGravity(true)
@@ -61,6 +62,7 @@ export class MainScene extends Phaser.Scene {
   ground?: Phaser.Physics.Matter.Image
   crate?: Phaser.Physics.Matter.Image
   arm?: Phaser.Physics.Matter.Image
+  cameraMode?: Camera.CameraMode
 
   constructor() {
     super({
@@ -76,8 +78,17 @@ export class MainScene extends Phaser.Scene {
   }
 
   create = () => {
+    // CAMERA
+    debugger
+    const { centerX, centerY } = this.cameras.main
+    this.cameras.main.centerOnX(centerX)
+    this.cameras.main.centerOnY(-centerY)
+    this.cameraMode = Camera.CameraModeNS.follow
+
+    // INPUTS
     this.keys = this.input.keyboard.addKeys('W,S,A,D,up,down,left,right,space')
 
+    // OBJECTS
     this.ground = createGround(this)
     this.crate = createCrate(this)
     this.arm = createArm(this)
@@ -85,6 +96,13 @@ export class MainScene extends Phaser.Scene {
   }
 
   update = () => {
+    Camera.updateCamera({
+      canvas: this.sys.game.canvas,
+      mode: this.cameraMode,
+      camera: this.cameras.main,
+      target: this.crate,
+    })
+
     if (!this.arm) {
       return
     }
