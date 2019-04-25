@@ -26,14 +26,15 @@ const createArm = (scene: Phaser.Scene) => {
   obj.setPosition(WINDOW_WIDTH / 2, 110)
   obj.setSize(600, 442)
   obj.setScale(1, 0.5)
-  obj.setStatic(true)
+  obj.setIgnoreGravity(true)
+  obj.setMass(1000)
 
   return obj
 }
 const createLink = (y: number, scene: Phaser.Scene) => {
   const obj = scene.matter.add.image(0, y, 'chain', undefined, {
     shape: 'rectangle',
-    mass: 1,
+    mass: 0.1,
   })
 
   obj.setScale(0.05, 0.05)
@@ -45,11 +46,11 @@ const createChain = (arm: Phaser.Physics.Matter.Image, scene: Phaser.Scene) => {
   let y = 0
   let prev = arm
 
-  for (var i = 0; i < 12; i++) {
+  for (var i = 0; i < 5; i++) {
     const link = createLink(y, scene)
-    scene.matter.add.joint(prev, link, i === 0 ? 90 : 35, 0.4)
+    scene.matter.add.joint(prev, link, i === 0 ? 200 : 35, 0.4)
     prev = link
-    y += 18
+    y += 400
   }
 
   return
@@ -80,15 +81,34 @@ export class MainScene extends Phaser.Scene {
     this.ground = createGround(this)
     this.crate = createCrate(this)
     this.arm = createArm(this)
-
     createChain(this.arm, this)
   }
 
   update = () => {
-    if (this.keys.left.isDown) {
-      this.arm && this.arm.setVelocityX(-50)
-    } else if (this.keys.right.isDown) {
-      this.arm && this.arm.setVelocityX(50)
+    if (!this.arm) {
+      return
+    }
+
+    if (this.keys.left.isDown || this.keys.right.isDown) {
+      if (this.keys.left.isDown) {
+        this.arm.setVelocityX(-5)
+      }
+      if (this.keys.right.isDown) {
+        this.arm.setVelocityX(5)
+      }
+    } else {
+      this.arm.setVelocityX(0)
+    }
+
+    if (this.keys.up.isDown || this.keys.down.isDown) {
+      if (this.keys.up.isDown) {
+        this.arm.setVelocityY(-5)
+      }
+      if (this.keys.down.isDown) {
+        this.arm.setVelocityY(5)
+      }
+    } else {
+      this.arm.setVelocityY(0)
     }
   }
 }
