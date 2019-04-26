@@ -14,9 +14,6 @@ const config = {
     matter: {
       debug: true,
     },
-    arcade: {
-      // debug: true,
-    },
   },
   scene: [HomeScene, ModeScene, CreditsScene, PlayScene],
   type: Phaser.AUTO,
