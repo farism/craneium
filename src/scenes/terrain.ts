@@ -84,5 +84,6 @@ export const createBackground = (scene: Phaser.Scene) => {
   addCloud(200, 200, 'cloud-1', scene)
   addCloud(750, 300, 'cloud-2', scene)
   addProcoreP2(scene)
+
   return addGround(scene)
 }

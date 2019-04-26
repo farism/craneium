@@ -27,6 +27,18 @@ interface Crane {
   bodyTop: Phaser.GameObjects.Image
 }
 
+const addLine = (x: number, y: number, color: string, scene: PlayScene) => {
+  return {
+    graphics: scene.add.graphics({
+      lineStyle: {
+        width: 2,
+        color: Phaser.Display.Color.HexStringToColor(color).color,
+      },
+    }),
+    line: new Phaser.Geom.Line(x, y, WINDOW_WIDTH, y),
+  }
+}
+
 const addArmChainAnchor = (group: number, scene: PlayScene) => {
   const obj = scene.matter.add.image(300, 120, 'transparent')
   obj.setIgnoreGravity(true)
@@ -62,20 +74,26 @@ const addChain = (x: number, y: number, group: number, scene: PlayScene) => {
     0,
     -yOffset,
     function(x, y) {
-      return (Phaser.Physics.Matter as any).Matter.Bodies.rectangle(
+      const body = (Phaser.Physics.Matter as any).Matter.Bodies.rectangle(
         x,
         y,
         CRANE_CHAIN_LINK_WIDTH,
         CRANE_CHAIN_LINK_HEIGHT,
         {
           collisionFilter: {
-            group: group,
+            group,
           },
           chamfer: 5,
           density: 0.1,
           frictionAir: 0.01,
         }
       )
+
+      const img = scene.matter.add.image(x, y, 'crane-arm-chain', 0)
+
+      img.setExistingBody(body, false)
+
+      return body
     }
   )
 
@@ -110,7 +128,7 @@ const addConstraints = (
 
   const hookConstraint: any = scene.matter.add.constraint(tail, hook, 0)
 
-  hookConstraint.pointA.y = 10
+  hookConstraint.pointA.y = 20
   hookConstraint.pointB.y = -10
 }
 
@@ -147,7 +165,6 @@ const addLPiece = (group: number, category: number, scene: PlayScene) => {
   obj.setFixedRotation()
   obj.setScale(2)
   obj.setCollisionGroup(group)
-  // obj.setCollisionGroup(4)
   obj.setCollisionCategory(category)
   obj.setCollidesWith([category])
 
@@ -176,7 +193,7 @@ const updateCurrent = (scene: PlayScene) => {
 
 const updateScore = (scene: PlayScene) => {
   const highest = (scene.pile && getHighestPiece(scene.pile)) || { y: 0 }
-  console.log({ highest: WINDOW_HEIGHT - highest.y })
+  // console.log({ highest: WINDOW_HEIGHT - highest.y })
 }
 
 const getHighestPiece = (
@@ -241,8 +258,6 @@ const addCrane = (group: number, scene: PlayScene): Crane => {
 
   addConstraints(chainHead, chainTail, armChainAnchor, armChainHook, scene)
 
-  // addCollision(scene)
-
   return {
     bodyTile,
     bodyBottom,
@@ -285,6 +300,14 @@ const isHookTouchingCurrentPiece = (scene: PlayScene) => {
 }
 
 export class PlayScene extends Phaser.Scene {
+  highScore?: {
+    graphics: Phaser.GameObjects.Graphics
+    line: Phaser.Geom.Line
+  }
+  currentScore?: {
+    graphics: Phaser.GameObjects.Graphics
+    line: Phaser.Geom.Line
+  }
   pile?: Phaser.GameObjects.Container
   crane?: Crane
   currentPiece?: Phaser.GameObjects.Image
@@ -302,6 +325,7 @@ export class PlayScene extends Phaser.Scene {
     this.load.image('button-play', './src/assets/button-play.png')
     this.load.image('cloud-1', './src/assets/cloud-1.png')
     this.load.image('cloud-2', './src/assets/cloud-2.png')
+    this.load.image('crane-arm-chain', './src/assets/crane-arm-chain.png')
     this.load.image('crane-arm-end', './src/assets/crane-arm-end.png')
     this.load.image('crane-arm-hook', './src/assets/crane-arm-hook.png')
     this.load.image('crane-arm-mover', './src/assets/crane-arm-mover.png')
@@ -327,6 +351,10 @@ export class PlayScene extends Phaser.Scene {
     this.pile = addPile(this)
     this.crane = addCrane(group, this)
     this.currentPiece = addBlockPiece(pileGroup, category, this)
+    // this.highScore = addLine(0, 20, '#ff0000', this)
+    // this.currentScore = addLine(0, 20, '#ff0000', this)
+
+    // CAMERA
     this.cameras.main.setBounds(
       0,
       -SKY_HEIGHT,
@@ -398,6 +426,11 @@ export class PlayScene extends Phaser.Scene {
     }
 
     this.crane && updateCranePosition(this)
+
+    if (this.highScore) {
+      this.highScore.graphics.clear()
+      this.highScore.graphics.strokeLineShape(this.highScore.line)
+    }
   }
 
   addToPile = (gameObject: Phaser.GameObjects.GameObject) => {
