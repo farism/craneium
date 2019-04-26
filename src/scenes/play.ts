@@ -1,14 +1,6 @@
 import { WINDOW_HEIGHT, WINDOW_WIDTH } from '../config'
-import { createBackground, addControls } from './terrain'
+import { createBackground, GROUND_HEIGHT, SKY_HEIGHT } from './terrain'
 
-const GROUND_HEIGHT = 70
-const GRASS_HEIGHT = GROUND_HEIGHT + 30
-const OCEAN_HEIGHT = GRASS_HEIGHT + 40
-const SKY_HEIGHT = WINDOW_HEIGHT * 1000
-const GROUND_COLOR = '#966014'
-const GRASS_COLOR = '#3e9b00'
-const OCEAN_COLOR = '#034096'
-const SKY_COLOR = '#27b5fe'
 const CRANE_BOTTOM_X = 156
 const CRANE_BODY_TILE_Y = WINDOW_HEIGHT - GROUND_HEIGHT
 const CRANE_BODY_TOP_WIDTH = 106
@@ -37,8 +29,8 @@ interface Crane {
   bodyTop: Phaser.GameObjects.Image
 }
 
-const addChainAnchor = (group: number, scene: PlayScene) => {
-  const obj = scene.matter.add.image(300, 120, '')
+const addArmChainAnchor = (group: number, scene: PlayScene) => {
+  const obj = scene.matter.add.image(300, 120, 'transparent')
   obj.setIgnoreGravity(true)
   obj.setCollisionGroup(group)
   obj.setFixedRotation()
@@ -212,7 +204,7 @@ const addCrane = (group: number, scene: PlayScene): Crane => {
 
   const armMover = scene.add.image(300, 0, 'crane-arm-mover').setScale(2)
 
-  const armChainAnchor = addChainAnchor(group, scene)
+  const armChainAnchor = addArmChainAnchor(group, scene)
 
   const armChain = addChain(armChainAnchor.x, armChainAnchor.y, group, scene)
 
@@ -286,15 +278,17 @@ export class PlayScene extends Phaser.Scene {
     this.load.image('cloud-1', './src/assets/cloud-1.png')
     this.load.image('cloud-2', './src/assets/cloud-2.png')
     this.load.image('crane-arm-end', './src/assets/crane-arm-end.png')
+    this.load.image('crane-arm-hook', './src/assets/crane-arm-hook.png')
     this.load.image('crane-arm-mover', './src/assets/crane-arm-mover.png')
-    this.load.image('crane-arm-tile', './src/assets/crane-arm-tile3.png')
+    this.load.image('crane-arm-tile', './src/assets/crane-arm-tile.png')
     this.load.image('crane-body-bottom', './src/assets/crane-body-bottom.png')
-    this.load.image('crane-body-tile', './src/assets/crane-body-tile3.png')
+    this.load.image('crane-body-tile', './src/assets/crane-body-tile.png')
     this.load.image('crane-body-top', './src/assets/crane-body-top.png')
     this.load.image('piece-beam', './src/assets/piece-beam.png')
     this.load.image('piece-block', './src/assets/piece-block.png')
     this.load.image('piece-l', './src/assets/piece-l.png')
     this.load.image('procore-p2', './src/assets/procore-p2.png')
+    this.load.image('transparent', './src/assets/transparent.png')
   }
 
   create = () => {

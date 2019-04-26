@@ -1,15 +1,15 @@
 import { WINDOW_HEIGHT, WINDOW_WIDTH } from '../config'
 
-const GROUND_HEIGHT = 70
-const GRASS_HEIGHT = GROUND_HEIGHT + 30
-const OCEAN_HEIGHT = GRASS_HEIGHT + 40
-const SKY_HEIGHT = WINDOW_HEIGHT * 1000
-const GROUND_COLOR = '#966014'
-const GRASS_COLOR = '#3e9b00'
-const OCEAN_COLOR = '#034096'
-const SKY_COLOR = '#27b5fe'
-const CONTROLS_COLOR = '#e89522'
-const CONTROLS_TEXT =
+export const GROUND_HEIGHT = 70
+export const GRASS_HEIGHT = GROUND_HEIGHT + 30
+export const OCEAN_HEIGHT = GRASS_HEIGHT + 40
+export const SKY_HEIGHT = WINDOW_HEIGHT * 1000
+export const GROUND_COLOR = '#966014'
+export const GRASS_COLOR = '#3e9b00'
+export const OCEAN_COLOR = '#034096'
+export const SKY_COLOR = '#27b5fe'
+export const CONTROLS_COLOR = '#e89522'
+export const CONTROLS_TEXT =
   'W - Up    S - Down    A - Left    D - Right    Space - Pickup/Drop'
 
 export const addTerrain = (

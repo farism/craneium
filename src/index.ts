@@ -12,10 +12,10 @@ const config = {
   physics: {
     default: 'matter',
     matter: {
-      debug: true,
+      // debug: true,
     },
     arcade: {
-      debug: true,
+      // debug: true,
     },
   },
   scene: [HomeScene, ModeScene, CreditsScene, PlayScene],

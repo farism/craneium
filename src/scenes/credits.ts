@@ -1,5 +1,6 @@
 import { WINDOW_WIDTH } from '../config'
 import { createBackground } from './terrain'
+import { addButton } from '../button'
 
 const STYLE = { align: 'center' }
 
@@ -15,6 +16,7 @@ export class CreditsScene extends Phaser.Scene {
   }
 
   preload = () => {
+    this.load.image('button-back', './src/assets/button-back.png')
     this.load.image('cloud-1', './src/assets/cloud-1.png')
     this.load.image('cloud-2', './src/assets/cloud-2.png')
     this.load.image('craneium-logo', './src/assets/craneium-logo.png')
@@ -27,6 +29,12 @@ export class CreditsScene extends Phaser.Scene {
 
   create = () => {
     createBackground(this)
+
+    const onClickBack = () => {
+      this.scene.switch('HomeScene')
+    }
+
+    addButton(50, 50, 'button-back', onClickBack, this)
 
     this.add.image(WINDOW_WIDTH / 2, 100, 'craneium-logo').setScale(2)
     this.add.image(WINDOW_WIDTH / 2, 200, 'dolphin-studios').setScale(2)
