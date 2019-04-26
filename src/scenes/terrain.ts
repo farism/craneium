@@ -40,7 +40,7 @@ export const addGrass = (scene: Phaser.Scene) => {
 export const addGround = (scene: Phaser.Scene) => {
   const ground = addTerrain(GROUND_HEIGHT, GROUND_COLOR, scene)
 
-  scene.matter.add.rectangle(
+  const obj = scene.matter.add.rectangle(
     WINDOW_WIDTH / 2,
     WINDOW_HEIGHT - GROUND_HEIGHT / 2,
     WINDOW_WIDTH,
@@ -50,7 +50,7 @@ export const addGround = (scene: Phaser.Scene) => {
     }
   )
 
-  return ground
+  return obj
 }
 
 export const addCloud = (
@@ -81,8 +81,8 @@ export const createBackground = (scene: Phaser.Scene) => {
   addSky(scene)
   addOcean(scene)
   addGrass(scene)
-  addGround(scene)
   addCloud(200, 200, 'cloud-1', scene)
   addCloud(750, 300, 'cloud-2', scene)
   addProcoreP2(scene)
+  return addGround(scene)
 }
