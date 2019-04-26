@@ -5,7 +5,7 @@ import { Scene } from 'phaser'
 const GROUND_HEIGHT = 70
 const GRASS_HEIGHT = GROUND_HEIGHT + 30
 const OCEAN_HEIGHT = GRASS_HEIGHT + 40
-const SKY_HEIGHT = WINDOW_HEIGHT * 100
+const SKY_HEIGHT = WINDOW_HEIGHT * 1000
 const GROUND_COLOR = '#966014'
 const GRASS_COLOR = '#3e9b00'
 const OCEAN_COLOR = '#034096'
@@ -28,6 +28,7 @@ const PILE_COLLISION_GROUP = 2
 
 interface Crane {
   armChainAnchor: Phaser.GameObjects.Image
+  armChainHook: Phaser.GameObjects.Image
   armChain: MatterJS.Composite
   armMover: Phaser.GameObjects.Image
   armEnd: Phaser.GameObjects.Image
@@ -37,7 +38,7 @@ interface Crane {
   bodyTop: Phaser.GameObjects.Image
 }
 
-const addChainAnchor = (scene: MainScene, group: number) => {
+const addChainAnchor = (group: number, scene: MainScene) => {
   const obj = scene.matter.add.image(300, 120, '')
   obj.setIgnoreGravity(true)
   obj.setCollisionGroup(group)
@@ -47,12 +48,26 @@ const addChainAnchor = (scene: MainScene, group: number) => {
   return obj
 }
 
-const addChain = (scene: MainScene, armChainAnchor: any, group: number) => {
+const addChainHook = (
+  x: number,
+  y: number,
+  group: number,
+  scene: MainScene
+) => {
+  const obj = scene.matter.add.image(x, y, '')
+  obj.setCollisionGroup(group)
+  obj.setFixedRotation()
+  obj.setMass(1)
+
+  return obj
+}
+
+const addChain = (x: number, y: number, group: number, scene: MainScene) => {
   const yOffset = CRANE_CHAIN_LINK_HEIGHT * CRANE_CHAIN_LINK_OFFSET
 
   const obj = scene.matter.add.stack(
-    armChainAnchor.x - 10,
-    armChainAnchor.y - yOffset - 5,
+    x - 10,
+    y - yOffset - 5,
     1,
     CRANE_CHAIN_LINK_COUNT,
     0,
@@ -90,43 +105,56 @@ const addChain = (scene: MainScene, armChainAnchor: any, group: number) => {
     }
   )
 
-  const chainConstraint: any = scene.matter.add.constraint(
-    chain.bodies[0],
-    armChainAnchor,
-    0
-  )
-
-  chainConstraint.pointA.y = -20
-
   return chain
 }
 
-const addBeamPiece = (scene: MainScene) => {
+const addConstraints = (
+  head: any,
+  tail: any,
+  anchor: any,
+  hook: any,
+  scene: MainScene
+) => {
+  const chainConstraint: any = scene.matter.add.constraint(head, anchor, 0)
+
+  chainConstraint.pointA.y = -20
+
+  const hookConstraint: any = scene.matter.add.constraint(tail, hook, 0)
+
+  hookConstraint.pointA.y = 10
+  hookConstraint.pointB.y = -10
+}
+
+const addBeamPiece = (group: number, scene: MainScene) => {
   const obj = scene.matter.add.image(400, 500, 'piece-beam')
 
   obj.setFixedRotation()
   obj.setScale(2)
-  scene.addTopile(obj)
+  obj.setCollisionGroup(group)
+  scene.addToPile(obj)
 
   return obj
 }
 
-const addBlockPiece = (scene: MainScene) => {
+const addBlockPiece = (group: number, scene: MainScene) => {
   const obj = scene.matter.add.image(400, 500, 'piece-block')
 
   obj.setScale(2)
   obj.setFixedRotation()
-  scene.addTopile(obj)
+  obj.setCollisionGroup(group)
+  obj.setMass(100)
+  scene.addToPile(obj)
 
   return obj
 }
 
-const addLPiece = (scene: MainScene) => {
+const addLPiece = (group: number, scene: MainScene) => {
   const obj = scene.matter.add.image(400, 500, 'piece-l')
 
   obj.setFixedRotation()
   obj.setScale(2)
-  scene.addTopile(obj)
+  obj.setCollisionGroup(group)
+  scene.addToPile(obj)
 
   return obj
 }
@@ -175,10 +203,15 @@ const addPile = (scene: MainScene) => {
   return scene.add.container(0, 0)
 }
 
-const addCrane = (scene: MainScene): Crane => {
-  const group = scene.matter.world.nextGroup(true)
+const addCrane = (group: number, scene: MainScene): Crane => {
   const bodyTile = scene.add
-    .tileSprite(CRANE_BOTTOM_X, CRANE_BODY_TILE_Y, 32, 10000, 'crane-body-tile')
+    .tileSprite(
+      CRANE_BOTTOM_X,
+      CRANE_BODY_TILE_Y,
+      32,
+      SKY_HEIGHT,
+      'crane-body-tile'
+    )
     .setOrigin(0.5, 1)
     .setScale(2)
 
@@ -204,9 +237,17 @@ const addCrane = (scene: MainScene): Crane => {
 
   const armMover = scene.add.image(300, 0, 'crane-arm-mover').setScale(2)
 
-  const armChainAnchor = addChainAnchor(scene, group)
+  const armChainAnchor = addChainAnchor(group, scene)
 
-  const armChain = addChain(scene, armChainAnchor, group)
+  const armChain = addChain(armChainAnchor.x, armChainAnchor.y, group, scene)
+
+  const chainHead = (armChain as any).bodies[0]
+
+  const chainTail = (armChain as any).bodies[CRANE_CHAIN_LINK_COUNT - 1]
+
+  const armChainHook = addChainHook(chainTail.x, chainTail.y, group, scene)
+
+  addConstraints(chainHead, chainTail, armChainAnchor, armChainHook, scene)
 
   return {
     bodyTile,
@@ -217,6 +258,7 @@ const addCrane = (scene: MainScene): Crane => {
     armTile,
     armChain,
     armChainAnchor,
+    armChainHook,
   }
 }
 
@@ -246,16 +288,31 @@ const updateCranePosition = (scene: MainScene) => {
   // scene.crane.armChainAnchor.setY(scene.crane.armTile.y)
 }
 
+const isHookTouchingCurrentPiece = (scene: MainScene) => {
+  return (
+    scene.currentPiece &&
+    scene.crane &&
+    (Phaser.Physics.Matter as any).Matter.SAT.collides(
+      scene.currentPiece.body,
+      scene.crane.armChainHook.body
+    ).collided
+  )
+}
+
 export class MainScene extends Phaser.Scene {
   pile?: Phaser.GameObjects.Container
   crane?: Crane
   currentPiece?: Phaser.GameObjects.Image
+  isHooked: boolean = false
+  isHookedConstraint: any
   keys: any
 
   constructor() {
     super({
       key: 'MainScene',
     })
+
+    console.log(Phaser)
   }
 
   preload = () => {
@@ -279,13 +336,7 @@ export class MainScene extends Phaser.Scene {
   }
 
   create = () => {
-    const { centerX, centerY } = this.cameras.main
-    // this.cameras.main.centerOnX(centerX)
-    // this.cameras.main.centerOnY(-centerY)
-    // this.cameraMode = Camera.CameraModeNS.follow
-
-    // INPUTS
-    this.keys = this.input.keyboard.addKeys('W,S,A,D,up,down,left,right,space')
+    const group = this.matter.world.nextGroup(true)
 
     addTerrain(SKY_HEIGHT, SKY_COLOR, this)
     addTerrain(OCEAN_HEIGHT, OCEAN_COLOR, this)
@@ -293,68 +344,78 @@ export class MainScene extends Phaser.Scene {
     addGround(this)
     addProcoreP2(this)
     this.pile = addPile(this)
-    this.crane = addCrane(this)
+    this.crane = addCrane(group, this)
+    this.currentPiece = addBlockPiece(group, this)
+    this.cameras.main.setBounds(
+      0,
+      -SKY_HEIGHT,
+      WINDOW_WIDTH,
+      WINDOW_HEIGHT + SKY_HEIGHT
+    )
+    this.cameras.main.startFollow(this.currentPiece)
 
-    this.currentPiece = addBlockPiece(this)
+    // INPUTS
+    this.keys = this.input.keyboard.addKeys('W,S,A,D,up,down,left,right')
+
+    this.input.keyboard.on('keydown_SPACE', event => {
+      if (event.repeat) {
+        return
+      }
+
+      if (!this.crane) {
+        return
+      }
+
+      if (this.isHooked) {
+        if (this.isHooked && this.isHookedConstraint) {
+          this.matter.world.removeConstraint(this.isHookedConstraint, true)
+        }
+
+        this.isHooked = false
+      } else if (this.currentPiece && isHookTouchingCurrentPiece(this)) {
+        this.isHookedConstraint = this.matter.add.constraint(
+          this.currentPiece,
+          this.crane.armChainHook,
+          0
+        )
+
+        this.isHooked = true
+      }
+    })
+
     // addBeamPiece(this)
     // addLPiece(this)
   }
 
   update = () => {
-    // Camera.updateCamera({
-    //   canvas: this.sys.game.canvas,
-    //   mode: this.cameraMode,
-    //   camera: this.cameras.main,
-    //   target: this.crate,
-    // })
+    if (!this.crane) {
+      return
+    }
 
-    if (this.crane) {
-      if (this.keys.W.isDown || this.keys.S.isDown) {
-        const y = this.crane.bodyTop.y
+    if (this.keys.W.isDown || this.keys.S.isDown) {
+      const y = this.crane.bodyTop.y
 
-        if (this.keys.W.isDown) {
-          this.crane.bodyTop.setY(y - 5)
-        } else if (this.keys.S.isDown) {
-          this.crane.bodyTop.setY(Math.min(CRANE_BODY_TOP_INITIAL_Y, y + 5))
-        }
-      }
-
-      if (this.keys.left.isDown || this.keys.right.isDown) {
-        const x = this.crane.armMover.x
-
-        if (this.keys.left.isDown) {
-          this.crane.armMover.setX(Math.max(300, x - 5))
-        } else if (this.keys.right.isDown) {
-          this.crane.armMover.setX(Math.min(800, x + 5))
-        }
+      if (this.keys.W.isDown) {
+        this.crane.bodyTop.setY(y - 5)
+      } else if (this.keys.S.isDown) {
+        this.crane.bodyTop.setY(Math.min(CRANE_BODY_TOP_INITIAL_Y, y + 5))
       }
     }
 
-    // if (this.keys.space.isDown) {
-    //   if (this.crate && this.hook) {
-    //     if (!this.isHolding) {
-    //       this.hookConstraint = this.matter.add.constraint(
-    //         this.crate,
-    //         this.hook,
-    //         0
-    //       )
-    //       console.log(this.hookConstraint)
-    //       debugger
-    //     }
-    //     this.isHolding = true
-    //   }
-    // } else {
-    //   if (this.isHolding && this.hookConstraint) {
-    //     this.matter.world.removeConstraint(this.hookConstraint, true)
-    //     debugger
-    //   }
-    //   this.isHolding = false
-    // }
+    if (this.keys.left.isDown || this.keys.right.isDown) {
+      const x = this.crane.armMover.x
+
+      if (this.keys.left.isDown) {
+        this.crane.armMover.setX(Math.max(300, x - 3))
+      } else if (this.keys.right.isDown) {
+        this.crane.armMover.setX(Math.min(800, x + 3))
+      }
+    }
 
     this.crane && updateCranePosition(this)
   }
 
-  addTopile = (gameObject: Phaser.GameObjects.GameObject) => {
+  addToPile = (gameObject: Phaser.GameObjects.GameObject) => {
     this.pile && this.pile.add(gameObject)
   }
 }
