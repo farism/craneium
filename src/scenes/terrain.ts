@@ -38,9 +38,9 @@ export const addGrass = (scene: Phaser.Scene) => {
 }
 
 export const addGround = (scene: Phaser.Scene) => {
-  const ground = addTerrain(GROUND_HEIGHT, GROUND_COLOR, scene)
+  addTerrain(GROUND_HEIGHT, GROUND_COLOR, scene)
 
-  const obj = scene.matter.add.rectangle(
+  const obj: any = scene.matter.add.rectangle(
     WINDOW_WIDTH / 2,
     WINDOW_HEIGHT - GROUND_HEIGHT / 2,
     WINDOW_WIDTH,
@@ -49,6 +49,9 @@ export const addGround = (scene: Phaser.Scene) => {
       isStatic: true,
     }
   )
+
+  obj.friction = 0.9
+  obj.staticFriction = 0.9
 
   return obj
 }
