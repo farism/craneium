@@ -143,6 +143,7 @@ const addRandomPiece = (group: number, category: number, scene: PlayScene) => {
   const idx = Math.floor(Math.random() * pieces.length)
   const piece = pieces[idx](group, category, scene)
   piece.setFriction(1, 0, 1)
+  piece.body.damping = 1
   return piece
 }
 
