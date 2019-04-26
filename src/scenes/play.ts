@@ -258,8 +258,6 @@ const addCrane = (group: number, scene: PlayScene): Crane => {
 
   const armEnd = scene.add.image(860, 0, 'crane-arm-end').setScale(2)
 
-  const armMover = scene.add.image(300, 0, 'crane-arm-mover').setScale(2)
-
   const armChainAnchor = addArmChainAnchor(group, scene)
 
   const armChain = addChain(armChainAnchor.x, armChainAnchor.y, group, scene)
@@ -269,6 +267,8 @@ const addCrane = (group: number, scene: PlayScene): Crane => {
   const chainTail = (armChain as any).bodies[CRANE_CHAIN_LINK_COUNT - 1]
 
   const armChainHook = addChainHook(chainTail.x, chainTail.y, group, scene)
+
+  const armMover = scene.add.image(300, 0, 'crane-arm-mover').setScale(2)
 
   addConstraints(chainHead, chainTail, armChainAnchor, armChainHook, scene)
 
@@ -311,6 +311,22 @@ const isHookTouchingCurrentPiece = (scene: PlayScene) => {
       scene.crane.armChainHook.body
     ).collided
   )
+}
+
+const isMovingUp = (scene: PlayScene) => {
+  return scene.keys.W.isDown || scene.keys.up.isDown
+}
+
+const isMovingDown = (scene: PlayScene) => {
+  return scene.keys.S.isDown || scene.keys.down.isDown
+}
+
+const isMovingLeft = (scene: PlayScene) => {
+  return scene.keys.A.isDown || scene.keys.left.isDown
+}
+
+const isMovingRight = (scene: PlayScene) => {
+  return scene.keys.D.isDown || scene.keys.right.isDown
 }
 
 export class PlayScene extends Phaser.Scene {
@@ -422,22 +438,22 @@ export class PlayScene extends Phaser.Scene {
     updateCurrent(this)
     updateScore(this)
 
-    if (this.keys.W.isDown || this.keys.S.isDown) {
+    if (isMovingDown(this) || isMovingUp(this)) {
       const y = this.crane.bodyTop.y
 
-      if (this.keys.W.isDown) {
+      if (isMovingUp(this)) {
         this.crane.bodyTop.setY(y - 5)
-      } else if (this.keys.S.isDown) {
+      } else if (isMovingDown(this)) {
         this.crane.bodyTop.setY(Math.min(CRANE_BODY_TOP_INITIAL_Y, y + 5))
       }
     }
 
-    if (this.keys.A.isDown || this.keys.D.isDown) {
+    if (isMovingLeft(this) || isMovingRight(this)) {
       const x = this.crane.armMover.x
 
-      if (this.keys.A.isDown) {
+      if (isMovingLeft(this)) {
         this.crane.armMover.setX(Math.max(300, x - 3))
-      } else if (this.keys.D.isDown) {
+      } else if (isMovingRight(this)) {
         this.crane.armMover.setX(Math.min(800, x + 3))
       }
     }
