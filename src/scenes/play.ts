@@ -1,7 +1,7 @@
 import { WINDOW_HEIGHT, WINDOW_WIDTH } from '../config'
 import { createBackground, GROUND_HEIGHT, SKY_HEIGHT } from './terrain'
 
-const GAME_START_STACK = 20
+const GAME_START_STACK = 50
 const CRANE_BOTTOM_X = 156
 const CRANE_BODY_TILE_Y = WINDOW_HEIGHT - GROUND_HEIGHT
 const CRANE_BODY_TOP_WIDTH = 106
@@ -134,7 +134,7 @@ const addConstraints = (
 }
 
 const addRandomPiece = (group: number, category: number, scene: PlayScene) => {
-  const pieces = [addBeamPiece, addBlockPiece /*addLPiece*/]
+  const pieces = [addBeamPiece, addBlockPiece, addLPiece]
   const idx = Math.floor(Math.random() * pieces.length)
   const piece = pieces[idx](group, category, scene)
   // piece.setFriction(0.5, 0, 0.5)
