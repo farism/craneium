@@ -1,12 +1,5 @@
 import { WINDOW_WIDTH } from '../config'
-import {
-  addSky,
-  addOcean,
-  addGrass,
-  addGround,
-  addCloud,
-  addProcoreP2,
-} from './terrain'
+import { createBackground } from './terrain'
 
 const STYLE = { align: 'center' }
 
@@ -33,13 +26,7 @@ export class CreditsScene extends Phaser.Scene {
   }
 
   create = () => {
-    addSky(this)
-    addOcean(this)
-    addGrass(this)
-    addGround(this)
-    addCloud(200, 200, 'cloud-1', this)
-    addCloud(750, 300, 'cloud-2', this)
-    addProcoreP2(this)
+    createBackground(this)
 
     this.add.image(WINDOW_WIDTH / 2, 100, 'craneium-logo').setScale(2)
     this.add.image(WINDOW_WIDTH / 2, 200, 'dolphin-studios').setScale(2)

@@ -8,6 +8,9 @@ const GROUND_COLOR = '#966014'
 const GRASS_COLOR = '#3e9b00'
 const OCEAN_COLOR = '#034096'
 const SKY_COLOR = '#27b5fe'
+const CONTROLS_COLOR = '#e89522'
+const CONTROLS_TEXT =
+  'W - Up    S - Down    A - Left    D - Right    Space - Pickup/Drop'
 
 export const addTerrain = (
   height: number,
@@ -64,4 +67,22 @@ export const addProcoreP2 = (scene: Phaser.Scene) => {
     .image(0, WINDOW_HEIGHT - GRASS_HEIGHT + 20, 'procore-p2')
     .setScale(2)
     .setOrigin(0, 1)
+}
+
+export const addControls = (scene: Phaser.Scene) => {
+  const text = scene.add
+    .text(0, WINDOW_HEIGHT - GROUND_HEIGHT / 2 - 5, CONTROLS_TEXT)
+    .setColor(CONTROLS_COLOR)
+
+  text.setX(WINDOW_WIDTH / 2 - text.width / 2)
+}
+
+export const createBackground = (scene: Phaser.Scene) => {
+  addSky(scene)
+  addOcean(scene)
+  addGrass(scene)
+  addGround(scene)
+  addCloud(200, 200, 'cloud-1', scene)
+  addCloud(750, 300, 'cloud-2', scene)
+  addProcoreP2(scene)
 }

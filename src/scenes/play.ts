@@ -1,12 +1,5 @@
 import { WINDOW_HEIGHT, WINDOW_WIDTH } from '../config'
-import {
-  addOcean,
-  addSky,
-  addGrass,
-  addCloud,
-  addGround,
-  addProcoreP2,
-} from './terrain'
+import { createBackground, addControls } from './terrain'
 
 const GROUND_HEIGHT = 70
 const GRASS_HEIGHT = GROUND_HEIGHT + 30
@@ -307,13 +300,8 @@ export class PlayScene extends Phaser.Scene {
   create = () => {
     const group = this.matter.world.nextGroup(true)
 
-    addSky(this)
-    addOcean(this)
-    addGrass(this)
-    addGround(this)
-    addCloud(200, 200, 'cloud-1', this)
-    addCloud(750, 300, 'cloud-2', this)
-    addProcoreP2(this)
+    createBackground(this)
+
     this.pile = addPile(this)
     this.crane = addCrane(group, this)
     this.currentPiece = addBlockPiece(group, this)
@@ -329,14 +317,7 @@ export class PlayScene extends Phaser.Scene {
     this.keys = this.input.keyboard.addKeys('W,S,A,D,up,down,left,right')
 
     this.input.keyboard.on('keydown_SPACE', event => {
-      // this.scene.launch('CreditsScene')
-      this.scene.switch('CreditsScene')
-
-      if (event.repeat) {
-        return
-      }
-
-      if (!this.crane) {
+      if (event.repeat || !this.crane) {
         return
       }
 
@@ -357,8 +338,13 @@ export class PlayScene extends Phaser.Scene {
       }
     })
 
-    // addBeamPiece(this)
-    // addLPiece(this)
+    this.input.keyboard.on('keydown_ENTER', event => {
+      if (event.repeat) {
+        return
+      }
+
+      console.log(event)
+    })
   }
 
   update = () => {
@@ -376,12 +362,12 @@ export class PlayScene extends Phaser.Scene {
       }
     }
 
-    if (this.keys.left.isDown || this.keys.right.isDown) {
+    if (this.keys.A.isDown || this.keys.D.isDown) {
       const x = this.crane.armMover.x
 
-      if (this.keys.left.isDown) {
+      if (this.keys.A.isDown) {
         this.crane.armMover.setX(Math.max(300, x - 3))
-      } else if (this.keys.right.isDown) {
+      } else if (this.keys.D.isDown) {
         this.crane.armMover.setX(Math.min(800, x + 3))
       }
     }

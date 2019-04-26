@@ -1,12 +1,12 @@
 import { WINDOW_WIDTH } from '../config'
-import { createBackground } from './terrain'
+import { createBackground, addControls } from './terrain'
 
 const CENTER_X = WINDOW_WIDTH / 2
 
-export class HomeScene extends Phaser.Scene {
+export class ModeScene extends Phaser.Scene {
   constructor() {
     super({
-      key: 'HomeScene',
+      key: 'ModeScene',
     })
   }
 
@@ -21,26 +21,27 @@ export class HomeScene extends Phaser.Scene {
 
   create = () => {
     createBackground(this)
+    addControls(this)
 
     this.add.image(CENTER_X, 100, 'craneium-logo').setScale(2)
     this.add.image(CENTER_X, 200, 'dolphin-studios').setScale(2)
 
-    const play = this.add
+    const countdown = this.add
       .image(CENTER_X, 325, 'button-play')
       .setScale(2)
       .setInteractive()
 
-    play.on('pointerup', () => {
-      this.scene.switch('ModeScene')
+    countdown.on('pointerup', () => {
+      this.scene.switch('PlayScene')
     })
 
-    const credits = this.add
+    const limit = this.add
       .image(CENTER_X, 450, 'button-play')
       .setScale(2)
       .setInteractive()
 
-    credits.on('pointerup', () => {
-      this.scene.switch('CreditsScene')
+    limit.on('pointerup', () => {
+      this.scene.switch('PlayScene')
     })
   }
 
