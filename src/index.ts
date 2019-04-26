@@ -1,6 +1,7 @@
 import 'phaser'
 import { WINDOW_WIDTH, WINDOW_HEIGHT } from './config'
-import { MainScene } from './scenes/play'
+import { PlayScene } from './scenes/play'
+import { CreditsScene } from './scenes/credits'
 
 const config = {
   antialias: false,
@@ -15,7 +16,7 @@ const config = {
       debug: true,
     },
   },
-  scene: MainScene,
+  scene: [CreditsScene, PlayScene],
   type: Phaser.AUTO,
   width: WINDOW_WIDTH,
 }

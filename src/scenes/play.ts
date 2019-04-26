@@ -1,6 +1,12 @@
 import { WINDOW_HEIGHT, WINDOW_WIDTH } from '../config'
-import * as Camera from '../camera'
-import { Scene } from 'phaser'
+import {
+  addOcean,
+  addSky,
+  addGrass,
+  addCloud,
+  addGround,
+  addProcoreP2,
+} from './terrain'
 
 const GROUND_HEIGHT = 70
 const GRASS_HEIGHT = GROUND_HEIGHT + 30
@@ -38,7 +44,7 @@ interface Crane {
   bodyTop: Phaser.GameObjects.Image
 }
 
-const addChainAnchor = (group: number, scene: MainScene) => {
+const addChainAnchor = (group: number, scene: PlayScene) => {
   const obj = scene.matter.add.image(300, 120, '')
   obj.setIgnoreGravity(true)
   obj.setCollisionGroup(group)
@@ -52,7 +58,7 @@ const addChainHook = (
   x: number,
   y: number,
   group: number,
-  scene: MainScene
+  scene: PlayScene
 ) => {
   const obj = scene.matter.add.image(x, y, '')
   obj.setCollisionGroup(group)
@@ -62,7 +68,7 @@ const addChainHook = (
   return obj
 }
 
-const addChain = (x: number, y: number, group: number, scene: MainScene) => {
+const addChain = (x: number, y: number, group: number, scene: PlayScene) => {
   const yOffset = CRANE_CHAIN_LINK_HEIGHT * CRANE_CHAIN_LINK_OFFSET
 
   const obj = scene.matter.add.stack(
@@ -113,7 +119,7 @@ const addConstraints = (
   tail: any,
   anchor: any,
   hook: any,
-  scene: MainScene
+  scene: PlayScene
 ) => {
   const chainConstraint: any = scene.matter.add.constraint(head, anchor, 0)
 
@@ -125,7 +131,7 @@ const addConstraints = (
   hookConstraint.pointB.y = -10
 }
 
-const addBeamPiece = (group: number, scene: MainScene) => {
+const addBeamPiece = (group: number, scene: PlayScene) => {
   const obj = scene.matter.add.image(400, 500, 'piece-beam')
 
   obj.setFixedRotation()
@@ -136,7 +142,7 @@ const addBeamPiece = (group: number, scene: MainScene) => {
   return obj
 }
 
-const addBlockPiece = (group: number, scene: MainScene) => {
+const addBlockPiece = (group: number, scene: PlayScene) => {
   const obj = scene.matter.add.image(400, 500, 'piece-block')
 
   obj.setScale(2)
@@ -148,7 +154,7 @@ const addBlockPiece = (group: number, scene: MainScene) => {
   return obj
 }
 
-const addLPiece = (group: number, scene: MainScene) => {
+const addLPiece = (group: number, scene: PlayScene) => {
   const obj = scene.matter.add.image(400, 500, 'piece-l')
 
   obj.setFixedRotation()
@@ -157,30 +163,6 @@ const addLPiece = (group: number, scene: MainScene) => {
   scene.addToPile(obj)
 
   return obj
-}
-
-const addTerrain = (height: number, color: string, scene: MainScene) => {
-  return scene.add.rectangle(
-    WINDOW_WIDTH / 2,
-    WINDOW_HEIGHT - height / 2,
-    WINDOW_WIDTH,
-    height,
-    Phaser.Display.Color.HexStringToColor(color).color
-  )
-}
-
-const addGround = (scene: MainScene) => {
-  addTerrain(GROUND_HEIGHT, GROUND_COLOR, scene)
-
-  scene.matter.add.rectangle(
-    WINDOW_WIDTH / 2,
-    WINDOW_HEIGHT - GROUND_HEIGHT / 2,
-    WINDOW_WIDTH,
-    GROUND_HEIGHT,
-    {
-      isStatic: true,
-    }
-  )
 }
 
 const getHighestPiece = (
@@ -199,11 +181,11 @@ const getHighestPiece = (
   return piece as Phaser.GameObjects.Image
 }
 
-const addPile = (scene: MainScene) => {
+const addPile = (scene: PlayScene) => {
   return scene.add.container(0, 0)
 }
 
-const addCrane = (group: number, scene: MainScene): Crane => {
+const addCrane = (group: number, scene: PlayScene): Crane => {
   const bodyTile = scene.add
     .tileSprite(
       CRANE_BOTTOM_X,
@@ -262,14 +244,7 @@ const addCrane = (group: number, scene: MainScene): Crane => {
   }
 }
 
-const addProcoreP2 = (scene: MainScene) => {
-  scene.add
-    .image(0, WINDOW_HEIGHT - GRASS_HEIGHT + 20, 'procore-p2')
-    .setScale(2)
-    .setOrigin(0, 1)
-}
-
-const updateCranePosition = (scene: MainScene) => {
+const updateCranePosition = (scene: PlayScene) => {
   if (!scene.crane) {
     return
   }
@@ -288,7 +263,7 @@ const updateCranePosition = (scene: MainScene) => {
   // scene.crane.armChainAnchor.setY(scene.crane.armTile.y)
 }
 
-const isHookTouchingCurrentPiece = (scene: MainScene) => {
+const isHookTouchingCurrentPiece = (scene: PlayScene) => {
   return (
     scene.currentPiece &&
     scene.crane &&
@@ -299,7 +274,7 @@ const isHookTouchingCurrentPiece = (scene: MainScene) => {
   )
 }
 
-export class MainScene extends Phaser.Scene {
+export class PlayScene extends Phaser.Scene {
   pile?: Phaser.GameObjects.Container
   crane?: Crane
   currentPiece?: Phaser.GameObjects.Image
@@ -309,10 +284,8 @@ export class MainScene extends Phaser.Scene {
 
   constructor() {
     super({
-      key: 'MainScene',
+      key: 'PlayScene',
     })
-
-    console.log(Phaser)
   }
 
   preload = () => {
@@ -325,11 +298,7 @@ export class MainScene extends Phaser.Scene {
     this.load.image('crane-body-bottom', './src/assets/crane-body-bottom.png')
     this.load.image('crane-body-tile', './src/assets/crane-body-tile3.png')
     this.load.image('crane-body-top', './src/assets/crane-body-top.png')
-    this.load.image('craneium-logo', './src/assets/craneium-logo.png')
     this.load.image('piece-beam', './src/assets/piece-beam.png')
-    this.load.image('person-faris', './src/assets/person-faris.png')
-    this.load.image('person-kevin', './src/assets/person-kevin.png')
-    this.load.image('person-remy', './src/assets/person-remy.png')
     this.load.image('piece-block', './src/assets/piece-block.png')
     this.load.image('piece-l', './src/assets/piece-l.png')
     this.load.image('procore-p2', './src/assets/procore-p2.png')
@@ -338,10 +307,12 @@ export class MainScene extends Phaser.Scene {
   create = () => {
     const group = this.matter.world.nextGroup(true)
 
-    addTerrain(SKY_HEIGHT, SKY_COLOR, this)
-    addTerrain(OCEAN_HEIGHT, OCEAN_COLOR, this)
-    addTerrain(GRASS_HEIGHT, GRASS_COLOR, this)
+    addSky(this)
+    addOcean(this)
+    addGrass(this)
     addGround(this)
+    addCloud(200, 200, 'cloud-1', this)
+    addCloud(750, 300, 'cloud-2', this)
     addProcoreP2(this)
     this.pile = addPile(this)
     this.crane = addCrane(group, this)
@@ -352,12 +323,15 @@ export class MainScene extends Phaser.Scene {
       WINDOW_WIDTH,
       WINDOW_HEIGHT + SKY_HEIGHT
     )
-    this.cameras.main.startFollow(this.currentPiece)
+    this.cameras.main.startFollow(this.crane.armChainHook)
 
     // INPUTS
     this.keys = this.input.keyboard.addKeys('W,S,A,D,up,down,left,right')
 
     this.input.keyboard.on('keydown_SPACE', event => {
+      // this.scene.launch('CreditsScene')
+      this.scene.switch('CreditsScene')
+
       if (event.repeat) {
         return
       }
