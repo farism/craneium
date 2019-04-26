@@ -137,7 +137,7 @@ const addRandomPiece = (group: number, category: number, scene: PlayScene) => {
   const pieces = [addBeamPiece, addBlockPiece /*addLPiece*/]
   const idx = Math.floor(Math.random() * pieces.length)
   const piece = pieces[idx](group, category, scene)
-  // piece.setFriction(0.5, 0, 0.5)
+  piece.setFriction(1, 0, 1)
   return piece
 }
 
@@ -358,6 +358,8 @@ export class PlayScene extends Phaser.Scene {
 
     const ground: any = createBackground(this)
     ground.collisionFilter.category = category
+    ground.friction = 0.9
+    ground.staticFriction = 0.9
 
     this.pile = addPile(this)
     this.crane = addCrane(group, this)
