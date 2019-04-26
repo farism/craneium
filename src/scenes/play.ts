@@ -134,9 +134,11 @@ const addConstraints = (
 }
 
 const addRandomPiece = (group: number, category: number, scene: PlayScene) => {
-  const pieces = [addBeamPiece, addBlockPiece, addLPiece]
+  const pieces = [addBeamPiece, addBlockPiece /*addLPiece*/]
   const idx = Math.floor(Math.random() * pieces.length)
-  return pieces[idx](group, category, scene)
+  const piece = pieces[idx](group, category, scene)
+  // piece.setFriction(0.5, 0, 0.5)
+  return piece
 }
 
 const addBeamPiece = (group: number, category: number, scene: PlayScene) => {
@@ -359,11 +361,9 @@ export class PlayScene extends Phaser.Scene {
 
     this.pile = addPile(this)
     this.crane = addCrane(group, this)
-    this.currentPiece = addBlockPiece(pileGroup, category, this)
-    // this.highScore = addLine(0, 20, '#ff0000', this)
-    // this.currentScore = addLine(0, 20, '#ff0000', this)
 
-    // CAMERA
+    this.currentPiece = addRandomPiece(pileGroup, category, this)
+
     this.cameras.main.setBounds(
       0,
       -SKY_HEIGHT,
@@ -403,10 +403,7 @@ export class PlayScene extends Phaser.Scene {
       }
       this.remainingPieces--
       addRandomPiece(pileGroup, category, this)
-      console.log(event)
     })
-    addBeamPiece(pileGroup, category, this)
-    addLPiece(pileGroup, category, this)
   }
 
   update = () => {
