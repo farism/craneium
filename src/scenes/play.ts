@@ -14,8 +14,6 @@ const CRANE_CHAIN_LINK_OFFSET = 0.3
 const CRANE_CHAIN_STIFFNESS = 0.5
 const CRANE_CHAIN_ANGULAR_STIFFNESS = 0.5
 const CRANE_CHAIN_DAMPING = 1
-const CRANE_COLLISION_GROUP = 3
-const PILE_COLLISION_GROUP = 2
 
 interface Crane {
   armChainAnchor: Phaser.GameObjects.Image
@@ -45,7 +43,7 @@ const addChainHook = (
   group: number,
   scene: PlayScene
 ) => {
-  const obj = scene.matter.add.image(x, y, '')
+  const obj = scene.matter.add.image(x, y, 'crane-arm-hook')
   obj.setCollisionGroup(group)
   obj.setFixedRotation()
   obj.setMass(1)
@@ -244,8 +242,6 @@ const updateCranePosition = (scene: PlayScene) => {
     scene.crane.armMover.x,
     scene.crane.armMover.y
   )
-
-  // scene.crane.armChainAnchor.setY(scene.crane.armTile.y)
 }
 
 const isHookTouchingCurrentPiece = (scene: PlayScene) => {
@@ -336,8 +332,6 @@ export class PlayScene extends Phaser.Scene {
       if (event.repeat) {
         return
       }
-
-      console.log(event)
     })
   }
 
