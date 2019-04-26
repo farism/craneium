@@ -1,6 +1,7 @@
 import { WINDOW_HEIGHT, WINDOW_WIDTH } from '../config'
 import { createBackground, GROUND_HEIGHT, SKY_HEIGHT } from './terrain'
 
+const GAME_START_STACK = 20
 const CRANE_BOTTOM_X = 156
 const CRANE_BODY_TILE_Y = WINDOW_HEIGHT - GROUND_HEIGHT
 const CRANE_BODY_TOP_WIDTH = 106
@@ -130,6 +131,12 @@ const addConstraints = (
 
   hookConstraint.pointA.y = 20
   hookConstraint.pointB.y = -10
+}
+
+const addRandomPiece = (group: number, category: number, scene: PlayScene) => {
+  const pieces = [addBeamPiece, addBlockPiece, addLPiece]
+  const idx = Math.floor(Math.random() * pieces.length)
+  return pieces[idx](group, category, scene)
 }
 
 const addBeamPiece = (group: number, category: number, scene: PlayScene) => {
@@ -313,12 +320,14 @@ export class PlayScene extends Phaser.Scene {
   currentPiece?: Phaser.GameObjects.Image
   isHooked: boolean = false
   isHookedConstraint: any
+  remainingPieces: number
   keys: any
 
   constructor() {
     super({
       key: 'PlayScene',
     })
+    this.remainingPieces = GAME_START_STACK
   }
 
   preload = () => {
@@ -389,9 +398,12 @@ export class PlayScene extends Phaser.Scene {
     })
 
     this.input.keyboard.on('keydown_ENTER', event => {
-      if (event.repeat) {
+      if (event.repeat || this.remainingPieces < 1) {
         return
       }
+      this.remainingPieces--
+      addRandomPiece(pileGroup, category, this)
+      console.log(event)
     })
     addBeamPiece(pileGroup, category, this)
     addLPiece(pileGroup, category, this)
