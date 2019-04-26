@@ -10,7 +10,7 @@ export const OCEAN_COLOR = '#034096'
 export const SKY_COLOR = '#27b5fe'
 export const CONTROLS_COLOR = '#e89522'
 export const CONTROLS_TEXT =
-  'W - Up    S - Down    A - Left    D - Right    Space - Pickup/Drop'
+  'W - Up    S - Down    A - Left    D - Right    Space - Pickup/Drop    Enter - Add Piece'
 
 export const addTerrain = (
   height: number,
