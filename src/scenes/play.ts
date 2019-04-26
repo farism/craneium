@@ -206,7 +206,21 @@ const updateCurrent = (scene: PlayScene) => {
 }
 
 const updateScore = (scene: PlayScene) => {
-  const highest = (scene.pile && getHighestPiece(scene.pile)) || { y: 0 }
+  const highest = (scene.pile && getHighestPiece(scene.pile)) || {
+    y: 0,
+    height: 0,
+  }
+  const text = `${Math.floor(
+    (WINDOW_HEIGHT - (highest.y + highest.height / 2) - 51) / 10
+  )}m`
+
+  scene.score =
+    scene.score ||
+    scene.add.text(0, WINDOW_HEIGHT - GROUND_HEIGHT / 4 - 100, text)
+
+  scene.score.setY(scene.cameras.main.scrollY + 20)
+  scene.score.setX(WINDOW_WIDTH - 60)
+  scene.score.setText(text)
   // console.log({ highest: WINDOW_HEIGHT - highest.y })
 }
 
@@ -345,6 +359,7 @@ export class PlayScene extends Phaser.Scene {
   isHookedConstraint: any
   remainingPieces: number
   keys: any
+  score: any
 
   constructor() {
     super({
