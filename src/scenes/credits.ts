@@ -1,3 +1,4 @@
+import { WINDOW_WIDTH } from '../config'
 import {
   addSky,
   addOcean,
@@ -6,7 +7,8 @@ import {
   addCloud,
   addProcoreP2,
 } from './terrain'
-import { WINDOW_WIDTH } from '../config'
+
+const STYLE = { align: 'center' }
 
 export class CreditsScene extends Phaser.Scene {
   faris?: Phaser.GameObjects.Image
@@ -42,11 +44,11 @@ export class CreditsScene extends Phaser.Scene {
     this.add.image(WINDOW_WIDTH / 2, 100, 'craneium-logo').setScale(2)
     this.add.image(WINDOW_WIDTH / 2, 200, 'dolphin-studios').setScale(2)
     this.kevin = this.add.image(200, 400, 'person-kevin').setScale(2)
-    this.add.text(this.kevin.x + 75, this.kevin.y, 'Kevin Chu')
+    this.add.text(this.kevin.x + 75, this.kevin.y, 'Kevin Chu\nArt', STYLE)
     this.faris = this.add.image(500, 450, 'person-faris').setScale(2)
-    this.add.text(this.faris.x + 75, this.faris.y, 'Faris Mustafa')
+    this.add.text(this.faris.x + 75, this.faris.y, 'Faris Mustafa\nDev', STYLE)
     this.remy = this.add.image(800, 400, 'person-remy').setScale(2)
-    this.add.text(this.remy.x + 75, this.remy.y, 'Remy Younes')
+    this.add.text(this.remy.x + 75, this.remy.y, 'Remy Younes\nDev', STYLE)
   }
 
   update = dt => {
