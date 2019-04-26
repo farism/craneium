@@ -2,22 +2,26 @@ import 'phaser'
 import { WINDOW_WIDTH, WINDOW_HEIGHT } from './config'
 import { MainScene } from './scenes/play'
 
-const config: GameConfig = {
-  width: WINDOW_WIDTH,
+const config = {
+  antialias: false,
   height: WINDOW_HEIGHT,
-  type: Phaser.AUTO,
   parent: 'game',
-  scene: MainScene,
   physics: {
     default: 'matter',
     matter: {
       debug: true,
     },
+    arcade: {
+      debug: true,
+    },
   },
+  scene: MainScene,
+  type: Phaser.AUTO,
+  width: WINDOW_WIDTH,
 }
 
 export class Game extends Phaser.Game {
-  constructor(config: GameConfig) {
+  constructor(config) {
     super(config)
   }
 }
