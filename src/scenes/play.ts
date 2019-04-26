@@ -107,6 +107,24 @@ const addChain = (x: number, y: number, group: number, scene: MainScene) => {
 
   return chain
 }
+// const addCollision = (scene: MainScene) => {
+//   const crane = scene.crane
+//   if (crane && crane.armChainHook) {
+//     scene.matter.world.on('collisionstart', function(event) {
+//       if (
+//         !scene.isHooked &&
+//         event.pairs[0].bodyA === crane.armChainHook.body &&
+//         event.pairs[0].bodyB === crane.armChainHook.body
+//       ) {
+//         console.log('collisionstart')
+//         event.pairs[0].bodyA.gameObject &&
+//           event.pairs[0].bodyA.gameObject.setTint(0xff0000)
+//         event.pairs[0].bodyB.gameObject &&
+//           event.pairs[0].bodyB.gameObject.setTint(0xff0000)
+//       }
+//     })
+//   }
+// }
 
 const addConstraints = (
   head: any,
@@ -182,21 +200,39 @@ const addGround = (scene: MainScene) => {
     }
   )
 }
+const updateCurrent = (scene: MainScene) => {
+  if (!scene.crane || scene.isHooked) return
+
+  const pile = ((scene.pile && scene.pile.getAll()) || []).map(obj => obj.body)
+
+  const Query = (Phaser.Physics.Matter as any).Matter.Query
+  const collisions = Query.collides(scene.crane.armChainHook.body, pile)
+  if (collisions.length) {
+    // TODO find closest
+    const closest = collisions[0]
+    const current =
+      closest.bodyA.gameObject === scene.crane.armChainHook
+        ? closest.bodyB.gameObject
+        : closest.bodyA.gameObject
+    scene.currentPiece = current
+  }
+}
+
+const updateScore = (scene: MainScene) => {
+  const highest = (scene.pile && getHighestPiece(scene.pile)) || { y: 0 }
+  console.log({ highest: WINDOW_HEIGHT - highest.y })
+}
 
 const getHighestPiece = (
   container: Phaser.GameObjects.Container
 ): Phaser.GameObjects.Image | undefined => {
-  let piece: any = null
+  const [first, ...pile]: any[] = container.getAll()
 
-  container.getAll().forEach(obj => {
-    const img = obj as Phaser.GameObjects.Image
-
-    if (!piece || img.y > piece.y) {
-      piece = img
-    }
-  })
-
-  return piece as Phaser.GameObjects.Image
+  return first
+    ? pile.reduce((highest, next) => {
+        return highest.y < next.y ? highest : next
+      }, first)
+    : undefined
 }
 
 const addPile = (scene: MainScene) => {
@@ -248,6 +284,8 @@ const addCrane = (group: number, scene: MainScene): Crane => {
   const armChainHook = addChainHook(chainTail.x, chainTail.y, group, scene)
 
   addConstraints(chainHead, chainTail, armChainAnchor, armChainHook, scene)
+
+  // addCollision(scene)
 
   return {
     bodyTile,
@@ -311,8 +349,6 @@ export class MainScene extends Phaser.Scene {
     super({
       key: 'MainScene',
     })
-
-    console.log(Phaser)
   }
 
   preload = () => {
@@ -383,14 +419,17 @@ export class MainScene extends Phaser.Scene {
       }
     })
 
-    // addBeamPiece(this)
-    // addLPiece(this)
+    addBeamPiece(group, this)
+    addLPiece(group, this)
   }
 
   update = () => {
     if (!this.crane) {
       return
     }
+
+    updateCurrent(this)
+    updateScore(this)
 
     if (this.keys.W.isDown || this.keys.S.isDown) {
       const y = this.crane.bodyTop.y
