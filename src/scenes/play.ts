@@ -1,5 +1,10 @@
 import { WINDOW_HEIGHT, WINDOW_WIDTH } from '../config'
-import { createBackground, GROUND_HEIGHT, SKY_HEIGHT } from './terrain'
+import {
+  createBackground,
+  GROUND_HEIGHT,
+  SKY_HEIGHT,
+  addControls,
+} from './terrain'
 
 const GAME_START_STACK = 50
 const CRANE_BOTTOM_X = 156
@@ -360,9 +365,10 @@ export class PlayScene extends Phaser.Scene {
     ground.collisionFilter.category = category
     ground.friction = 0.9
     ground.staticFriction = 0.9
-
     this.pile = addPile(this)
     this.crane = addCrane(group, this)
+
+    addControls(this)
 
     this.currentPiece = addRandomPiece(pileGroup, category, this)
 

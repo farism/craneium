@@ -71,7 +71,7 @@ export const addProcoreP2 = (scene: Phaser.Scene) => {
 
 export const addControls = (scene: Phaser.Scene) => {
   const text = scene.add
-    .text(0, WINDOW_HEIGHT - GROUND_HEIGHT / 2 - 5, CONTROLS_TEXT)
+    .text(0, WINDOW_HEIGHT - GROUND_HEIGHT / 2 + 10, CONTROLS_TEXT)
     .setColor(CONTROLS_COLOR)
 
   text.setX(WINDOW_WIDTH / 2 - text.width / 2)
