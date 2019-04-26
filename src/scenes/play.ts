@@ -107,24 +107,6 @@ const addChain = (x: number, y: number, group: number, scene: MainScene) => {
 
   return chain
 }
-// const addCollision = (scene: MainScene) => {
-//   const crane = scene.crane
-//   if (crane && crane.armChainHook) {
-//     scene.matter.world.on('collisionstart', function(event) {
-//       if (
-//         !scene.isHooked &&
-//         event.pairs[0].bodyA === crane.armChainHook.body &&
-//         event.pairs[0].bodyB === crane.armChainHook.body
-//       ) {
-//         console.log('collisionstart')
-//         event.pairs[0].bodyA.gameObject &&
-//           event.pairs[0].bodyA.gameObject.setTint(0xff0000)
-//         event.pairs[0].bodyB.gameObject &&
-//           event.pairs[0].bodyB.gameObject.setTint(0xff0000)
-//       }
-//     })
-//   }
-// }
 
 const addConstraints = (
   head: any,
@@ -143,35 +125,43 @@ const addConstraints = (
   hookConstraint.pointB.y = -10
 }
 
-const addBeamPiece = (group: number, scene: MainScene) => {
+const addBeamPiece = (group: number, category: number, scene: MainScene) => {
   const obj = scene.matter.add.image(400, 500, 'piece-beam')
 
   obj.setFixedRotation()
   obj.setScale(2)
   obj.setCollisionGroup(group)
+  obj.setCollisionCategory(category)
+  obj.setCollidesWith([category])
   scene.addToPile(obj)
 
   return obj
 }
 
-const addBlockPiece = (group: number, scene: MainScene) => {
+const addBlockPiece = (group: number, category: number, scene: MainScene) => {
   const obj = scene.matter.add.image(400, 500, 'piece-block')
 
   obj.setScale(2)
   obj.setFixedRotation()
   obj.setCollisionGroup(group)
+  obj.setCollisionCategory(category)
+  obj.setCollidesWith([category])
   obj.setMass(100)
   scene.addToPile(obj)
 
   return obj
 }
 
-const addLPiece = (group: number, scene: MainScene) => {
+const addLPiece = (group: number, category: number, scene: MainScene) => {
   const obj = scene.matter.add.image(400, 500, 'piece-l')
 
   obj.setFixedRotation()
   obj.setScale(2)
   obj.setCollisionGroup(group)
+  // obj.setCollisionGroup(4)
+  obj.setCollisionCategory(category)
+  obj.setCollidesWith([category])
+
   scene.addToPile(obj)
 
   return obj
@@ -190,7 +180,7 @@ const addTerrain = (height: number, color: string, scene: MainScene) => {
 const addGround = (scene: MainScene) => {
   addTerrain(GROUND_HEIGHT, GROUND_COLOR, scene)
 
-  scene.matter.add.rectangle(
+  return scene.matter.add.rectangle(
     WINDOW_WIDTH / 2,
     WINDOW_HEIGHT - GROUND_HEIGHT / 2,
     WINDOW_WIDTH,
@@ -373,15 +363,18 @@ export class MainScene extends Phaser.Scene {
 
   create = () => {
     const group = this.matter.world.nextGroup(true)
+    const pileGroup = this.matter.world.nextGroup(false)
+    const category = this.matter.world.nextCategory()
 
     addTerrain(SKY_HEIGHT, SKY_COLOR, this)
     addTerrain(OCEAN_HEIGHT, OCEAN_COLOR, this)
     addTerrain(GRASS_HEIGHT, GRASS_COLOR, this)
-    addGround(this)
+    const ground: any = addGround(this)
+    ground.collisionFilter.category = category
     addProcoreP2(this)
     this.pile = addPile(this)
     this.crane = addCrane(group, this)
-    this.currentPiece = addBlockPiece(group, this)
+    this.currentPiece = addBlockPiece(pileGroup, category, this)
     this.cameras.main.setBounds(
       0,
       -SKY_HEIGHT,
@@ -419,8 +412,8 @@ export class MainScene extends Phaser.Scene {
       }
     })
 
-    addBeamPiece(group, this)
-    addLPiece(group, this)
+    addBeamPiece(pileGroup, category, this)
+    addLPiece(pileGroup, category, this)
   }
 
   update = () => {
