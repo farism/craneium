@@ -1,9 +1,7 @@
 const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
-const pathToPhaser = path.join(__dirname, '/node_modules/phaser/')
-
-const phaser = path.join(pathToPhaser, 'dist/phaser.js')
+const { NormalModuleReplacementPlugin } = require('webpack')
 
 module.exports = {
   entry: './src/index.ts',
@@ -13,9 +11,6 @@ module.exports = {
   },
   resolve: {
     extensions: ['.ts', '.js'],
-    alias: {
-      phaser: phaser,
-    },
   },
   module: {
     rules: [
@@ -24,19 +19,38 @@ module.exports = {
         loader: 'ts-loader',
         exclude: '/node_modules/',
       },
-      {
-        test: /phaser\.js$/,
-        loader: 'expose-loader?Phaser',
-      },
+      // {
+      //   test: require.resolve('Phaser'),
+      //   loader: 'expose-loader',
+      //   options: {
+      //     exposes: {
+      //       globalName: 'Phaser',
+      //       override: true,
+      //     },
+      //   },
+      // },
     ],
   },
   plugins: [
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, 'src/index.html'),
     }),
-    new CopyWebpackPlugin([
-      { from: 'src/assets', to: 'src/assets' },
-      { from: 'favicon.ico', to: 'favicon.ico' },
-    ]),
+    new CopyWebpackPlugin({
+      patterns: [
+        { from: 'src/assets', to: 'src/assets' },
+        { from: 'favicon.ico', to: 'favicon.ico' },
+      ],
+    }),
+    new NormalModuleReplacementPlugin(
+      /phaser\/dist\/phaser\.js/,
+      path.join(__dirname, '/phaser/phaser.js')
+    ),
   ],
+  devServer: {
+    contentBase: path.resolve(__dirname, 'dist'),
+    publicPath: '/',
+    host: 'localhost',
+    port: 8080,
+    open: false,
+  },
 }

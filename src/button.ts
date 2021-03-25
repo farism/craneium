@@ -1,14 +1,11 @@
-export const addButton = (
+export function createButton(
   x: number,
   y: number,
   id: string,
   onClick: () => void,
   scene: Phaser.Scene
-) => {
-  const obj = scene.add
-    .image(x, y, id)
-    .setScale(2)
-    .setInteractive()
+) {
+  const obj = scene.add.image(x, y, id).setScale(2).setInteractive()
 
   obj.on('pointerup', () => {
     onClick()
