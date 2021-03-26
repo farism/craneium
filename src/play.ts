@@ -36,7 +36,6 @@ export class PlayScene extends Phaser.Scene {
   keys: any
   ground?: MatterJS.BodyType
   pile?: Phaser.GameObjects.Container
-  pileWasAwake?: boolean
   crane?: Crane
 
   highscoreLine?: Phaser.GameObjects.Rectangle
@@ -488,11 +487,11 @@ export class PlayScene extends Phaser.Scene {
     if (this.isPileAsleep()) {
       const top = this.pile?.getBounds().top ?? windowHeight
 
+      const prevHighscore = this.highscore
+
       this.highscore = Math.min(top, this.highscore)
 
-      if (this.pileWasAwake) {
-        this.pileWasAwake = false
-
+      if (this.highscore !== prevHighscore) {
         localStorage.setItem('highscore', String(this.highscore))
       }
 
