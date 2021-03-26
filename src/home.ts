@@ -14,6 +14,7 @@ export class HomeScene extends Phaser.Scene {
     this.load.image('button-play', './src/assets/button-play.png')
     this.load.image('cloud-1', './src/assets/cloud-1.png')
     this.load.image('cloud-2', './src/assets/cloud-2.png')
+    this.load.image('cloud-3', './src/assets/cloud-3.png')
     this.load.image('craneium-logo', './src/assets/craneium-logo.png')
     this.load.image('procore-p2', './src/assets/procore-p2.png')
   }

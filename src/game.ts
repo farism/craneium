@@ -14,8 +14,8 @@ const config = {
       // debug: true,
     },
   },
-  // scene: [HomeScene, PlayScene],
-  scene: [PlayScene, HomeScene],
+  scene: [HomeScene, PlayScene],
+  // scene: [PlayScene, HomeScene],
   type: Phaser.AUTO,
   width: windowWidth,
 }
