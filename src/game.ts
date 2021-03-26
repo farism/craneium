@@ -10,7 +10,8 @@ const config = {
   physics: {
     default: 'matter',
     matter: {
-      debug: true,
+      enableSleeping: true,
+      // debug: true,
     },
   },
   // scene: [HomeScene, PlayScene],

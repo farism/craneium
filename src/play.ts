@@ -1,31 +1,31 @@
 import { createBackground, groundHeight, skyHeight } from './background'
-import { windowHeight, windowWidth } from './viewport'
+import { randomInRange } from './utils'
+import { cameraMaxY, windowHeight, windowWidth } from './viewport'
 
-const gameStartStack = 50
+const totalPieces = 50
+const cloudBoundary = 200
+const cloudVelocityScale = 50
 const craneBottomX = 156
-const craneBodyTileY = windowHeight - groundHeight
-const craneBodyTopWidth = 106
-const craneBodyTopInitialY = 150
-const craneArmTileX = 500
-const craneArmTileWidth = 320
-const craneChainLinkCount = 5
-const craneChainLinkHeight = 50
-const craneChainLinkWidth = 20
-const craneChainLinkOffset = 0.3
-const craneChainStiffness = 0.5
-const craneChainAngularStiffness = 0.8
-const craneChainDamping = 1
+const craneBodyY = windowHeight - groundHeight
+const craneArmX = 500
+const craneArmY = 175
+const craneAnchorY = 116
+const craneArmSpeedUp = 2
+const craneArmSpeedDown = 3
+const craneArmSpeedLeft = 3
+const craneArmSpeedRight = 3
+const craneArmMinX = 300
+const craneArmMaxX = 900
+const chainAngularStiffness = 0.8
+const chainStiffness = 1
 
 interface Crane {
-  anchor: Phaser.GameObjects.Image
-  arm: Phaser.GameObjects.TileSprite
+  anchor: Phaser.Physics.Matter.Image
+  arm: Phaser.GameObjects.Image
   base: Phaser.GameObjects.Image
   body: Phaser.GameObjects.TileSprite
-  cap: Phaser.GameObjects.Image
-  capsule: Phaser.GameObjects.Image
-  chain?: MatterJS.Composite
-  hook: Phaser.GameObjects.Image
-  slider: Phaser.GameObjects.Image
+  chain: MatterJS.Composite
+  hook: Phaser.Physics.Matter.Image
 }
 
 export class PlayScene extends Phaser.Scene {
@@ -33,26 +33,57 @@ export class PlayScene extends Phaser.Scene {
     graphics: Phaser.GameObjects.Graphics
     line: Phaser.Geom.Line
   }
-  pile?: Phaser.GameObjects.Container
-  crane?: Crane
-  currentPiece?: Phaser.GameObjects.Image
-  isHooked: boolean = false
-  isHookedConstraint: any
   keys: any
-  score: any
-  group: number
-  pileGroup: number
-  category: number
+  ground?: MatterJS.BodyType
+  pile?: Phaser.GameObjects.Container
+  pileWasAwake?: boolean
+  crane?: Crane
+
+  highscoreLine?: Phaser.GameObjects.Rectangle
+  highscoreText?: Phaser.GameObjects.Text
+  highscore: number = 0
+
+  clouds?: Phaser.GameObjects.Container
+  cloudDirections: number[] = []
+  cloudPositions: number[] = []
+
+  group: number = 0
+  category: number = 0
+  hookCategory: number = 0
+
   remainingPieces: number
+  hookedPiece?: Phaser.Physics.Matter.Image | undefined
+  hookedPieceAngle: number = 0
+  hookedConstraint: MatterJS.ConstraintType | undefined
+  hookCollisions: Phaser.Physics.Matter.Image[] = []
 
   constructor() {
     super({
       key: 'PlayScene',
     })
-    this.group = 0
-    this.pileGroup = 0
-    this.category = 0
-    this.remainingPieces = gameStartStack
+    this.highscore = this.getHighScore()
+    this.remainingPieces = totalPieces
+  }
+
+  preload = () => {
+    this.load.image('button-play', './src/assets/button-play.png')
+    this.load.image('cloud-1', './src/assets/cloud-1.png')
+    this.load.image('cloud-2', './src/assets/cloud-2.png')
+    this.load.image('cloud-3', './src/assets/cloud-3.png')
+    this.load.image('crane-arm', './src/assets/crane-arm.png')
+    this.load.image('crane-arm-2', './src/assets/crane-arm-2.png')
+    this.load.image('crane-base', './src/assets/crane-base.png')
+    this.load.image('crane-body', './src/assets/crane-body.png')
+    this.load.image('crane-cap', './src/assets/crane-cap.png')
+    this.load.image('crane-capsule', './src/assets/crane-capsule.png')
+    this.load.image('crane-chain', './src/assets/crane-chain.png')
+    this.load.image('crane-hook', './src/assets/crane-hook.png')
+    this.load.image('crane-anchor', './src/assets/crane-anchor.png')
+    this.load.image('piece-beam', './src/assets/piece-beam.png')
+    this.load.image('piece-brick', './src/assets/piece-brick.png')
+    this.load.image('piece-wood', './src/assets/piece-wood.png')
+    this.load.image('procore-p2', './src/assets/procore-p2.png')
+    this.load.image('transparent', './src/assets/transparent.png')
   }
 
   get isMovingUp(): boolean {
@@ -71,116 +102,201 @@ export class PlayScene extends Phaser.Scene {
     return this.keys.D.isDown || this.keys.right.isDown
   }
 
-  createLine = (x: number, y: number, color: string) => {
-    return {
-      graphics: this.add.graphics({
-        lineStyle: {
-          width: 2,
-          color: Phaser.Display.Color.HexStringToColor(color).color,
-        },
-      }),
-      line: new Phaser.Geom.Line(x, y, windowWidth, y),
-    }
-  }
+  createCloudDirections = () => {
+    this.clouds?.getAll().forEach((obj, i) => {
+      const cloud = obj as Phaser.GameObjects.Image
 
-  createChainAnchor = () => {
-    const obj = this.matter.add.image(300, 120, 'transparent')
-    obj.setIgnoreGravity(true)
-    // obj.setCollisionGroup(-1)
-    obj.setFixedRotation()
-    obj.setMass(10)
+      this.cloudPositions[i] = cloud.x
 
-    return obj
-  }
-
-  createChainHook = (x: number, y: number) => {
-    const obj = this.matter.add.image(x, y, 'crane-hook')
-    // obj.setCollisionGroup(-1)
-    // obj.setFixedRotation()
-    // obj.setMass(2)
-
-    return obj
-  }
-
-  createChain = (x: number, y: number) => {
-    const obj = this.matter.add.imageStack(
-      'crane-chain',
-      0,
-      x - 10,
-      y,
-      1,
-      10,
-      0,
-      1,
-      {
-        density: 0.01,
-        friction: 1,
+      if (this.cloudDirections) {
+        this.cloudDirections[i] = i % 2 === 0 ? -1 : 1
       }
+    })
+  }
+
+  createHighscore = () => {
+    const alpha = 0.75
+
+    this.highscoreLine = this.add.rectangle(
+      windowWidth / 2,
+      this.highscore,
+      windowWidth,
+      2,
+      0xffff00,
+      alpha
     )
 
-    // const chain: any = this.matter.add.chain(obj, 0, 0.3, 0, -0.3, {
-    //   stiffness: 0.8,
-    //   // angularStiffness: 0.1,
-    //   damping: 0.1,
-    //   render: {
-    //     visible: true,
-    //   },
-    // })
+    this.highscoreText = this.add
+      .text(0, this.highscore + 10, '', {
+        align: 'right',
+        color: '#ffff00',
+      })
+      .setFixedSize(windowWidth - 20, 0)
+      .setAlpha(alpha)
+  }
+
+  createGround = () => {
+    this.ground = this.matter.add.rectangle(
+      windowWidth / 2,
+      windowHeight - groundHeight / 2,
+      windowWidth,
+      groundHeight,
+      {
+        isStatic: true,
+        friction: 1,
+        collisionFilter: {
+          category: this.category,
+        },
+      }
+    )
   }
 
   createCrane = () => {
-    const body = this.add
-      .tileSprite(craneBottomX, craneBodyTileY, 32, skyHeight, 'crane-body')
-      .setOrigin(0.5, 1)
-      .setScale(2)
+    const createBody = () => {
+      const obj = this.add.tileSprite(
+        craneBottomX,
+        craneBodyY,
+        32,
+        cameraMaxY,
+        'crane-body'
+      )
+      obj.setOrigin(0.5, 1)
+      obj.setScale(2)
 
-    const base = this.add
-      .image(craneBottomX, windowHeight - groundHeight + 10, 'crane-base')
-      .setScale(2)
+      return obj
+    }
 
-    const arm = this.add
-      .tileSprite(craneArmTileX, 0, craneArmTileWidth, 32, 'crane-arm')
-      .setScale(2)
+    const createBase = () => {
+      const obj = this.add.image(
+        craneBottomX,
+        windowHeight - groundHeight + 10,
+        'crane-base'
+      )
+      obj.setScale(2)
 
-    const capsule = this.add
-      .image(craneBodyTopWidth, craneBodyTopInitialY, 'crane-capsule')
-      .setScale(2)
+      return obj
+    }
 
-    // const cap = this.add.image(860, 0, 'crane-cap').setScale(2)
+    const createArm = () => {
+      const obj = this.add.image(craneArmX, craneArmY, 'crane-arm-2')
+      obj.setScale(2)
 
-    const slider = this.add.image(300, 0, 'crane-slider').setScale(2)
+      return obj
+    }
 
-    const anchor = this.createChainAnchor()
+    const createAnchor = (x: number, y: number) => {
+      const obj = this.matter.add.image(x, y, 'crane-anchor')
+      obj.setStatic(true)
+      obj.setIgnoreGravity(true)
+      obj.setCollisionGroup(-1)
+      obj.setFixedRotation()
+      obj.setScale(2)
 
-    const chain = this.createChain(anchor.x, anchor.y)
+      return obj
+    }
 
-    const chainHead = (chain as any).bodies[0]
+    const createHook = (x: number, y: number) => {
+      const obj = this.matter.add.image(x, y, 'crane-hook')
+      obj.setFixedRotation()
+      obj.setMass(5)
+      obj.setSensor(true)
+      obj.setCollisionCategory(this.hookCategory)
+      obj.setCollidesWith([this.category])
+      obj.setOnCollide(({ bodyB }) => {
+        this.hookCollisions = [bodyB.gameObject, ...this.hookCollisions]
+      })
+      obj.setOnCollideEnd(({ bodyB }) => {
+        this.hookCollisions = this.hookCollisions.filter(
+          (obj) => bodyB.gameObject !== obj
+        )
+      })
 
-    const chainTail = (chain as any).bodies[craneChainLinkCount - 1]
+      return obj
+    }
 
-    const hook = this.createChainHook(0, 0)
+    const createLink = (x: number, y: number) => {
+      const obj = this.matter.add.image(x, y, 'crane-chain')
+      obj.setCollisionGroup(-1)
+      obj.setDensity(0.1)
 
-    this.matter.add.constraint(chainHead, anchor as any, 0.01, 1, {
-      pointA: { x: 0, y: 0 },
-      pointB: { x: 0, y: 20 },
-      render: { visible: true, lineColor: 0xff0000 },
-      damping: 0.1,
-    })
+      return obj
+    }
 
-    // this.matter.add.constraint(chainTail, hook as any, 0, 0.8, {
-    //   pointA: { x: 0, y: 0 },
-    //   pointB: { x: 0, y: 40 },
-    // })
+    const createChain = (x: number, y: number) => {
+      const chain: Phaser.Physics.Matter.Image[] = []
+
+      let nextY = 0
+      let prev: Phaser.Physics.Matter.Image | null = null
+
+      for (let i = 0; i < 11; i++) {
+        nextY += 35
+
+        const link = createLink(x, y + nextY)
+
+        if (prev) {
+          this.matter.add.constraint(prev as any, link as any, 0, 1.5, {
+            angularStiffness: 0.7,
+            damping: 0.5,
+            pointA: { x: 0, y: 17 },
+            pointB: { x: 0, y: -17 },
+          })
+        }
+
+        prev = link
+
+        chain.push(link)
+      }
+
+      return chain
+    }
+
+    const attachChainAnchorHook = () => {
+      this.matter.add.constraint(
+        anchor as any,
+        chain[0] as any,
+        0,
+        chainStiffness,
+        {
+          angularStiffness: chainAngularStiffness,
+          pointA: { x: 0, y: 25 },
+          pointB: { x: 0, y: -15 },
+        }
+      )
+
+      this.matter.add.constraint(
+        chain[chain.length - 1] as any,
+        hook as any,
+        0,
+        0.7,
+        {
+          angularStiffness: 0.6,
+          pointA: { x: 0, y: 20 },
+        }
+      )
+    }
+
+    const body = createBody()
+
+    const base = createBase()
+
+    const arm = createArm()
+
+    const anchorY = arm.getTopCenter().y + craneAnchorY
+
+    const chain = createChain(300, anchorY)
+
+    const anchor = createAnchor(300, anchorY)
+
+    const hook = createHook(300, chain[chain.length - 1].y + 20)
+
+    attachChainAnchorHook()
 
     this.crane = {
       body,
       base,
-      capsule,
-      slider,
-      cap,
-      arm,
-      // chain,
       anchor,
+      arm,
+      chain,
       hook,
     }
   }
@@ -189,258 +305,245 @@ export class PlayScene extends Phaser.Scene {
     this.pile = this.add.container(0, 0)
   }
 
-  addToPile = (gameObject: Phaser.GameObjects.GameObject) => {
-    this.pile && this.pile.add(gameObject)
+  initializePiece = (piece: Phaser.Physics.Matter.Image) => {
+    piece.setPosition(randomInRange(300, 500), 500)
+    piece.setScale(2)
+    piece.setCollisionCategory(this.category)
+    piece.setCollidesWith([this.category, this.hookCategory])
+    piece.setFriction(0.9)
+
+    return piece
   }
 
   createRandomPiece = () => {
+    if (this.remainingPieces < 1) {
+      return
+    }
+
+    this.remainingPieces--
+
     const pieces = [
       this.createBeamPiece,
       this.createBrickPiece,
       this.createWoodPiece,
     ]
+
     const index = Math.floor(Math.random() * pieces.length)
+
     const piece = pieces[index]()
-    piece.setFriction(1, 0, 10)
-    // piece.body.damping = 1
 
-    this.addToPile(piece)
+    piece.addListener('sleep', console.log)
 
-    console.log('here')
+    this.wakePile()
+
+    this.pile?.add(piece)
 
     return piece
   }
 
   createBeamPiece = () => {
-    const piece = this.matter.add.image(400, 500, 'piece-beam')
+    const piece = this.matter.add.image(0, 0, 'piece-beam')
+    piece.setDensity(0.01)
 
-    piece.setFixedRotation()
-    piece.setScale(2)
-    piece.setCollisionGroup(this.group)
-    piece.setCollisionCategory(this.category)
-    piece.setCollidesWith([this.category])
-
-    return piece
+    return this.initializePiece(piece)
   }
 
   createBrickPiece = () => {
-    const piece = this.matter.add.image(400, 500, 'piece-brick')
+    const piece = this.matter.add.image(0, 0, 'piece-brick')
+    piece.setDensity(0.01)
 
-    piece.setScale(2)
-    piece.setFixedRotation()
-    piece.setCollisionGroup(this.group)
-    piece.setCollisionCategory(this.category)
-    piece.setCollidesWith([this.category])
-    piece.setMass(100)
-
-    return piece
+    return this.initializePiece(piece)
   }
 
   createWoodPiece = () => {
-    const piece = this.matter.add.image(400, 500, 'piece-wood')
+    const piece = this.matter.add.image(0, 0, 'piece-wood')
+    piece.setDensity(0.01)
 
-    piece.setScale(2)
-    piece.setFixedRotation()
-    piece.setCollisionGroup(this.group)
-    piece.setCollisionCategory(this.category)
-    piece.setCollidesWith([this.category])
-    piece.setMass(100)
-
-    return piece
+    return this.initializePiece(piece)
   }
 
-  updateCurrent = () => {
-    if (!this.crane || this.isHooked) return
-
-    const pile = ((this.pile && this.pile.getAll()) || []).map(
-      (piece) => piece.body
+  setupCamera = () => {
+    this.cameras.main.setBounds(
+      0,
+      -cameraMaxY,
+      windowWidth,
+      windowHeight + cameraMaxY
     )
 
-    const Query = (Phaser.Physics.Matter as any).Matter.Query
-    const collisions = Query.collides(this.crane.hook.body, pile)
-    if (collisions.length) {
-      // TODO find closest
-      const closest = collisions[0]
-      const current =
-        closest.bodyA.gameObject === this.crane.hook
-          ? closest.bodyB.gameObject
-          : closest.bodyA.gameObject
-      this.currentPiece = current
-    }
-  }
-
-  updateScore = () => {
-    const highest = (this.pile && this.getHighestPiece(this.pile)) || {
-      y: 0,
-      height: 0,
+    if (this.crane?.hook) {
+      this.cameras.main.startFollow(this.crane.hook)
     }
 
-    const text = `${Math.floor(
-      (windowHeight - (highest.y + highest.height / 2) - 51) / 10
-    )}m`
-
-    this.score =
-      this.score ||
-      this.add.text(0, windowHeight - groundHeight / 4 - 100, text)
-
-    this.score.setY(this.cameras.main.scrollY + 20)
-    this.score.setX(windowWidth - 60)
-    // console.log({ highest: WINDOW_HEIGHT - highest.y })
+    this.cameras.main.fadeIn(1000, 0, 0, 0)
   }
 
-  getHighestPiece = (
-    container: Phaser.GameObjects.Container
-  ): Phaser.GameObjects.Image | undefined => {
-    const [first, ...pile]: any[] = container.getAll()
+  setupInputs = () => {
+    this.keys = this.input.keyboard.addKeys('W,S,A,D,up,down,left,right,SPACE')
 
-    return first
-      ? pile.reduce((highest, next) => {
-          return highest.y < next.y ? highest : next
-        }, first)
-      : undefined
-  }
+    this.input.keyboard.on('keydown', (event: KeyboardEvent) => {
+      if (event.code === 'Space' && !event.repeat) {
+        this.toggleHookConstraint()
+      }
 
-  updateCranePosition = () => {
-    if (!this.crane) {
-      return
-    }
-
-    this.crane.arm.setY(this.crane.capsule.y - 30)
-
-    this.crane.slider.setY(this.crane.arm.y)
-
-    this.crane.cap.setY(this.crane.arm.y)
-
-    this.crane.anchor.setPosition(this.crane.slider.x, this.crane.slider.y)
-  }
-
-  isHookTouchingCurrentPiece = () => {
-    return (
-      this.currentPiece &&
-      this.crane &&
-      (Phaser.Physics.Matter as any).Matter.SAT.collides(
-        this.currentPiece.body,
-        this.crane.hook.body
-      ).collided
-    )
-  }
-
-  preload = () => {
-    this.load.image('button-play', './src/assets/button-play.png')
-    this.load.image('cloud-1', './src/assets/cloud-1.png')
-    this.load.image('cloud-2', './src/assets/cloud-2.png')
-    this.load.image('crane-arm', './src/assets/crane-arm.png')
-    this.load.image('crane-base', './src/assets/crane-base.png')
-    this.load.image('crane-body', './src/assets/crane-body.png')
-    this.load.image('crane-cap', './src/assets/crane-cap.png')
-    this.load.image('crane-capsule', './src/assets/crane-capsule.png')
-    this.load.image('crane-chain', './src/assets/crane-chain.png')
-    this.load.image('crane-hook', './src/assets/crane-hook.png')
-    this.load.image('crane-slider', './src/assets/crane-slider.png')
-    this.load.image('piece-beam', './src/assets/piece-beam.png')
-    this.load.image('piece-brick', './src/assets/piece-brick.png')
-    this.load.image('piece-wood', './src/assets/piece-wood.png')
-    this.load.image('procore-p2', './src/assets/procore-p2.png')
-    this.load.image('transparent', './src/assets/transparent.png')
+      if (event.code === 'Enter' && !event.repeat) {
+        this.createRandomPiece()
+      }
+    })
   }
 
   create = () => {
-    // this.matter.world.setGravity(0, 0.1)
-    this.group = this.matter.world.nextGroup(true)
+    const background = createBackground(this, this.category)
 
-    this.pileGroup = this.matter.world.nextGroup(false)
+    this.clouds = background.clouds
+
+    this.group = this.matter.world.nextGroup(true)
 
     this.category = this.matter.world.nextCategory()
 
-    createBackground(this)
+    this.hookCategory = this.matter.world.nextCategory()
+
+    this.createCloudDirections()
+
+    this.createGround()
+
+    this.createHighscore()
 
     this.createPile()
 
     this.createCrane()
 
-    this.currentPiece = this.createRandomPiece()
+    this.setupCamera()
 
-    this.cameras.main.setBounds(
-      0,
-      -skyHeight,
-      windowWidth,
-      windowHeight + skyHeight
-    )
+    this.setupInputs()
 
-    if (this.crane?.hook) {
-      // this.cameras.main.startFollow(this.crane.hook)
+    this.createRandomPiece()
+  }
+
+  wakePile = () => {
+    this.pile
+      ?.getAll()
+      .forEach((obj) => (obj as Phaser.Physics.Matter.Image).setAwake())
+  }
+
+  isPileAsleep = () => {
+    return this.pile?.getAll().every((obj) => (obj.body as any).isSleeping)
+  }
+
+  toggleHookConstraint = () => {
+    if (this.hookedConstraint) {
+      this.matter.world.removeConstraint(this.hookedConstraint, true)
+
+      this.hookedConstraint = undefined
+
+      this.hookedPiece = undefined
+    } else {
+      const hook = this.crane?.hook.body as MatterJS.BodyType
+
+      const hovered = this.hookCollisions[0]
+
+      if (hovered) {
+        this.hookedPiece = hovered
+
+        this.hookedPieceAngle = hovered.angle ?? 0
+
+        this.hookedConstraint = this.matter.add.constraint(
+          hook as MatterJS.BodyType,
+          (hovered as unknown) as MatterJS.BodyType,
+          0
+        )
+      }
     }
+  }
 
-    this.cameras.main.fadeIn(1000, 0, 0, 0)
+  updateClouds = () => {
+    this.clouds?.getAll().forEach((obj, i) => {
+      const cloud = obj as Phaser.GameObjects.Image
 
-    // INPUTS
-    this.keys = this.input.keyboard.addKeys('W,S,A,D,up,down,left,right,SPACE')
+      const velocity = cloud.scale / cloudVelocityScale
 
-    this.input.keyboard.on('keydown_SPACE', (event) => {
-      console.log('here')
-      if (event.repeat || !this.crane) {
-        return
+      const direction = this.cloudDirections?.[i] ?? 1
+
+      this.cloudPositions[i] += velocity * direction
+
+      cloud.x = Math.floor(this.cloudPositions[i])
+
+      // if the cloud has gone off screen, flip it
+      if (cloud.x < -cloudBoundary || cloud.x > windowWidth + cloudBoundary) {
+        this.cloudDirections[i] *= -1
       }
-
-      if (this.isHooked) {
-        if (this.isHooked && this.isHookedConstraint) {
-          this.matter.world.removeConstraint(this.isHookedConstraint, true)
-        }
-
-        this.isHooked = false
-      } else if (this.currentPiece && this.isHookTouchingCurrentPiece()) {
-        console.log(typeof this.currentPiece.body)
-        if (typeof this.currentPiece.body) {
-          // this.isHookedConstraint = this.matter.add.constraint(
-          //   this.currentPiece.body,
-          //   this.crane.hook,
-          //   0
-          // )
-        }
-
-        this.isHooked = true
-      }
-    })
-
-    this.input.keyboard.on('keydown_ENTER', (event) => {
-      console.log(this)
-      if (event.repeat || this.remainingPieces < 1) {
-        return
-      }
-      this.remainingPieces--
-      this.createRandomPiece()
     })
   }
 
-  update = () => {
+  getHighScore = (): number => {
+    return JSON.parse(localStorage.getItem('highscore') || `${windowHeight}`)
+  }
+
+  setHighscoreText = () => {
+    const highscore = (windowHeight - groundHeight - this.highscore) / 20
+
+    this.highscoreText?.setText(Math.floor(highscore) + 'm')
+  }
+
+  updateHighscore = () => {
+    if (this.isPileAsleep()) {
+      const top = this.pile?.getBounds().top ?? windowHeight
+
+      this.highscore = Math.min(top, this.highscore)
+
+      if (this.pileWasAwake) {
+        this.pileWasAwake = false
+
+        localStorage.setItem('highscore', String(this.highscore))
+      }
+
+      if (this.highscoreLine && this.highscoreText) {
+        this.highscoreLine.y = this.highscore
+        this.highscoreText.y = this.highscore + 10
+        this.setHighscoreText()
+      }
+    }
+  }
+
+  resetHookedAngle = () => {
+    this.hookedPiece?.setAngle(this.hookedPieceAngle)
+  }
+
+  handleInput = () => {
     if (!this.crane) {
       return
     }
 
-    this.updateCurrent()
-
-    this.updateScore()
-
     if (this.isMovingDown || this.isMovingUp) {
-      const y = this.crane.capsule.y
+      const y = this.crane.arm.y
 
       if (this.isMovingUp) {
-        this.crane.capsule.setY(y - 5)
+        this.crane.arm.setY(Math.max(-cameraMaxY, y - craneArmSpeedUp))
       } else if (this.isMovingDown) {
-        this.crane.capsule.setY(Math.min(craneBodyTopInitialY, y + 5))
+        this.crane.arm.setY(Math.min(craneArmY, y + craneArmSpeedDown))
       }
+
+      // sync anchor position to new arm position
+      this.crane?.anchor.setY(this.crane.arm.getTopCenter().y + craneAnchorY)
     }
 
     if (this.isMovingLeft || this.isMovingRight) {
-      const x = this.crane.slider.x
+      const x = this.crane.anchor.x
 
       if (this.isMovingLeft) {
-        this.crane.slider.setX(Math.max(300, x - 3))
+        this.crane.anchor.setX(Math.max(craneArmMinX, x - craneArmSpeedLeft))
       } else if (this.isMovingRight) {
-        this.crane.slider.setX(Math.min(800, x + 3))
+        this.crane.anchor.setX(Math.min(craneArmMaxX, x + craneArmSpeedRight))
       }
     }
+  }
 
-    this.updateCranePosition()
+  update = () => {
+    this.updateClouds()
+
+    this.updateHighscore()
+
+    this.resetHookedAngle()
+
+    this.handleInput()
   }
 }

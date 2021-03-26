@@ -3,8 +3,6 @@ import { createBackground } from './background'
 import { createButton } from './button'
 import { centerX, centerY } from './viewport'
 
-console.log(Phaser)
-
 export class HomeScene extends Phaser.Scene {
   constructor() {
     super({
