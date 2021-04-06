@@ -26,7 +26,7 @@ export class HomeScene extends Phaser.Scene {
   createPlayButton = () => {
     const playBtn = createButton(
       centerX,
-      centerY,
+      centerY - 80,
       'button-play',
       () => {
         playBtn.disableInteractive()
@@ -44,11 +44,31 @@ export class HomeScene extends Phaser.Scene {
     )
   }
 
+  createDirections = () => {
+    const directions = [
+      'Arrow Keys - Move Crane',
+      'Space - Pick up and Drop Piece',
+      'Enter - Add piece',
+    ]
+
+    const t = this.add.text(0, centerY, directions.join('\n\n'), {
+      fontSize: '24px',
+      align: 'center',
+      resolution: 1,
+    })
+
+    t.setShadow(-1, 2, 'rgba(0,0,0,0.5)', 0)
+
+    t.x = centerX - t.width / 2
+  }
+
   create = () => {
     createBackground(this)
 
     this.createLogo()
 
     this.createPlayButton()
+
+    this.createDirections()
   }
 }

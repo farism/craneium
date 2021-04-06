@@ -2,7 +2,7 @@ import { createBackground, groundHeight, skyHeight } from './background'
 import { randomInRange } from './utils'
 import { cameraMaxY, windowHeight, windowWidth } from './viewport'
 
-const totalPieces = 50
+const totalPieces = 200
 const cloudBoundary = 200
 const cloudVelocityScale = 50
 const craneBottomX = 156
@@ -51,6 +51,7 @@ export class PlayScene extends Phaser.Scene {
   hookCategory: number = 0
 
   remainingPieces: number
+  lastCreatedTime: number = 0
   hookedPiece?: Phaser.Physics.Matter.Image | undefined
   hookedPieceAngle: number = 0
   hookedConstraint: MatterJS.ConstraintType | undefined
@@ -385,7 +386,13 @@ export class PlayScene extends Phaser.Scene {
       }
 
       if (event.code === 'Enter' && !event.repeat) {
-        this.createRandomPiece()
+        const now = new Date().getTime()
+        const canCreate = now - this.lastCreatedTime > 1000
+
+        if (canCreate) {
+          this.lastCreatedTime = now
+          this.createRandomPiece()
+        }
       }
     })
   }
